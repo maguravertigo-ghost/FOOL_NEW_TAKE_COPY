@@ -26,7 +26,7 @@ export const ASSETS = {
 
   settingsIcon: `${BASE}/hud/settings_icon.svg`,
   fullscreenIcon: `${BASE}/hud/icons/fullscreen.svg`,
-  
+  starIcon: `${BASE}/hud/icons/star.svg`,
   shopIcons: {
     shirt:  `${BASE}/hud/icons/shirts.svg`,
     design: `${BASE}/hud/icons/styles.svg`,
@@ -162,8 +162,6 @@ shirts: [
     clubs:    `${BASE}/card_body/suits/default/clubs.svg`,
     spades:   `${BASE}/card_body/suits/default/spades.svg`,
   }
-  
-  starIcon: `${BASE}/hud/icons/star.svg`,
 };
 
 const ACHIEVEMENT_ICONS = {

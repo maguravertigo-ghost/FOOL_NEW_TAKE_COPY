@@ -324,12 +324,8 @@ _ensureDeckShadow() {
       return;
     }
 
-    // Все карты, которые ещё не в руках:
-    //   колода + стек + козырь (если он ещё не забран)
     const remaining = this._totalRemaining() + (this.trumpTaken ? 0 : 1);
 
-    // Когда остался только козырь (remaining === 1) — скрываем,
-    // его и так видно на столе.
     if (remaining <= 1) {
       this.deckCounterEl.style.display = 'none';
       return;
@@ -354,8 +350,6 @@ _ensureDeckShadow() {
       this.deckCounterEl.style.top  = (bottomY + padY) + 'px';
     } else {
       const p = this.scene.resolve(deckM);
-		el.style.left = (p.x - REAL.w / 2) + 'px';
-		el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.5) + 'px';  // выше колоды на пол-карты
       this.deckCounterEl.classList.remove('deck-counter--mobile');
       this.deckCounterEl.style.left = p.x + 'px';
       this.deckCounterEl.style.top  = p.y + 'px';
@@ -438,23 +432,31 @@ _removeDeckShadow() {
 
   _showTrumpSuitIcon() {
     if (this.trumpSuitEl) return;
-    const deckM = this.markers.get('deck');
+
     const el = document.createElement('div');
     el.className = 'trump-suit';
     el.style.width  = REAL.w + 'px';
     el.style.height = REAL.h + 'px';
+
     const svg = svgInstance(ASSETS.suits[this.trump]);
     if (svg) {
       svg.style.width  = '55%';
       svg.style.height = '55%';
       el.appendChild(svg);
     }
+
     this.gameLayer.appendChild(el);
-    const p = this.scene.resolve(trumpM);
+
+    // Привязываем к маркеру колоды (а не козыря),
+    // чтобы после сдвига стола влево (deckShiftXH) символ остался над колодой
+    const deckM = this.markers.get('deck');
+    const p = this.scene.resolve(deckM);
+
     el.style.left = (p.x - REAL.w / 2) + 'px';
-    el.style.top  = (p.y - REAL.h / 2) + 'px';
+    el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.5) + 'px'; // над колодой на пол-карты
     el.style.transformOrigin = 'center center';
-    el.style.transform = `rotate(${trumpM.angle || 0}deg)`;
+    el.style.transform = `rotate(0deg)`;  // без поворота, стоит ровно
+
     this.trumpSuitEl = el;
   }
 
