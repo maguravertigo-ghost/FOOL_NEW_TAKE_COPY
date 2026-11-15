@@ -234,8 +234,12 @@ export class GameSession {
 	
     if (this._timer) { clearTimeout(this._timer); this._timer = null; }
 
-		// _suitResizeUnsub больше не используется (см. _showGameOver)
-
+	// _suitResizeUnsub больше не используется (см. _showGameOver)
+	if (this.trumpSuitEl && this.trumpSuitEl.parentNode) {
+		this.trumpSuitEl.parentNode.removeChild(this.trumpSuitEl);
+	}
+	// ← ДОЛЖНО БЫТЬ:
+	this.trumpSuitEl = null;
   }
 
   _totalRemaining() { return this.deck.size() + this.stack.length; }
@@ -422,7 +426,7 @@ _removeDeckShadow() {
       card = this.trumpCard;
       this.trumpTaken = true;
       card.marker = null;
-      this._showTrumpSuitIcon();
+      this._updateTrumpSuitIconPosition();   // ← иконка уже есть, просто двигаем
       this._updateDeckCounter?.();
       return card;
     }
@@ -430,44 +434,76 @@ _removeDeckShadow() {
     return null;
   }
 
-  _showTrumpSuitIcon() {
-    if (this.trumpSuitEl) return;
+_updateTrumpSuitIconPosition() {
+  if (!this.trumpSuitEl) return;
 
-    const el = document.createElement('div');
-    el.className = 'trump-suit';
-    el.style.width  = REAL.w + 'px';
-    el.style.height = REAL.h + 'px';
+  // ═══ РАЗМЕР — от карты, значит масштабируется с REAL ═══
+  // ICON_W_MUL: 0.95 ≈ чуть меньше карты. Подбери (1.0, 1.1, 1.2)
+  const ICON_W_MUL = 0.55;
+  const iconW = REAL.w * ICON_W_MUL;
+  const iconH = REAL.w * ICON_W_MUL;   // квадрат
 
-    const svg = svgInstance(ASSETS.suits[this.trump]);
-    if (svg) {
-      svg.style.width  = '55%';
-      svg.style.height = '55%';
-      el.appendChild(svg);
-    }
+  this.trumpSuitEl.style.width  = iconW + 'px';
+  this.trumpSuitEl.style.height = iconH + 'px';
 
-    this.gameLayer.appendChild(el);
+  const deckM  = this.markers.get('deck');
+  const trumpM = this.markers.get('trump');
 
-    const deckM  = this.markers.get('deck');
-    const trumpM = this.markers.get('trump');
+  if (uiScale.isMobile) {
+    this.trumpSuitEl.style.display = 'flex';   // ← ДОБАВИТЬ
+    // Отступы — как у счётчика (16/10 × uiScale.scale)
+    const padX = Math.round(4 * uiScale.scale);
+    const padY = Math.round(38 * uiScale.scale);
 
-    if (uiScale.isMobile) {
-      // Мобилка: значок НАД колодой, смотрит вверх (rotate 0)
-      const p = this.scene.resolve(deckM);
-      el.style.left = (p.x - REAL.w / 2) + 'px';
-      el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.6) + 'px';
-      el.style.transformOrigin = 'center center';
-      el.style.transform = `rotate(0deg)`;
+    const pDeck = this.scene.resolve(deckM);
+
+    if (!this.trumpTaken) {
+      // ═══ Pos A: у левого края (как счётчик), НАД колодой ═══
+      this.trumpSuitEl.style.left = padX + 'px';
+      this.trumpSuitEl.style.top  = (pDeck.y - REAL.w / 2 - padY - iconH) + 'px';
     } else {
-      // ПК: как раньше — на маркере козыря, повёрнут вместе с картой
-      const p = this.scene.resolve(trumpM);
-      el.style.left = (p.x - REAL.w / 2) + 'px';
-      el.style.top  = (p.y - REAL.h / 2) + 'px';
-      el.style.transformOrigin = 'center center';
-      el.style.transform = `rotate(${trumpM.angle || 0}deg)`;
+      // ═══ Pos B: у левого края (как счётчик), ЦЕНТР колоды ═══
+      this.trumpSuitEl.style.left = padX + 'px';
+      this.trumpSuitEl.style.top  = (pDeck.y - iconH / 2) + 'px';
+    }
+    this.trumpSuitEl.style.transformOrigin = 'center center';
+    this.trumpSuitEl.style.transform = `rotate(0deg)`;
+  } else {
+    // ПК: иконка видна ТОЛЬКО когда карта козыря вышла из колоды.
+    // Пока карта лежит под колодой — сама карта видна, иконка не нужна.
+    if (!this.trumpTaken) {
+      this.trumpSuitEl.style.display = 'none';
+      return;
     }
 
-    this.trumpSuitEl = el;
+    this.trumpSuitEl.style.display = 'flex';
+
+    const p = this.scene.resolve(trumpM);
+    this.trumpSuitEl.style.left = (p.x - iconW / 2) + 'px';
+    this.trumpSuitEl.style.top  = (p.y - iconH / 2) + 'px';
+    this.trumpSuitEl.style.transformOrigin = 'center center';
+    this.trumpSuitEl.style.transform = `rotate(${trumpM.angle || 0}deg)`;
   }
+}
+
+_showTrumpSuitIcon() {
+  if (this.trumpSuitEl) return;
+
+  const el = document.createElement('div');
+  el.className = 'trump-suit';
+  // размер и позицию задаёт _updateTrumpSuitIconPosition
+
+  const svg = svgInstance(ASSETS.suits[this.trump]);
+  if (svg) {
+    svg.style.width  = '70%';   // было 55% — чуть крупнее, чтобы вписаться
+    svg.style.height = '70%';
+    el.appendChild(svg);
+  }
+  this.gameLayer.appendChild(el);
+  this.trumpSuitEl = el;
+
+  this._updateTrumpSuitIconPosition();
+}
 
   /* ================================================================
    *  ПЕРВИЧНАЯ РАЗДАЧА
@@ -620,6 +656,7 @@ _removeDeckShadow() {
 	card.setAngle(90);
 	audio.playSfx('card_hit');
 	this._updateDeckCounter?.();
+	this._showTrumpSuitIcon();
   }
 
   async _flipPlayerCards() {
@@ -2875,6 +2912,7 @@ _maybeAutoFocusOnButton() {
     trump.marker = trumpM;
     trump.relayout(this.scene);
     this.trumpCard = trump;
+	this._showTrumpSuitIcon();
 
     if (this.app.debug) this.app.debug.requestRender();
 	this._updateDeckCounter?.();

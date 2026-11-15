@@ -949,13 +949,9 @@ async _startGameFromMenu(mode) {
       if (this.session.slotUIs) for (const s of this.session.slotUIs) s.relayout();
       this.session._repositionActionButton();
 	  this.session._updateDeckCounter?.();
-      if (this.session.trumpSuitEl) {
-        const trumpM = this.markers.get('trump');
-        const p = this.scene.resolve(trumpM);
-        this.session.trumpSuitEl.style.left = (p.x - REAL.w / 2) + 'px';
-        this.session.trumpSuitEl.style.top  = (p.y - REAL.h / 2) + 'px';
-        this.session.trumpSuitEl.style.transform = `rotate(${trumpM.angle || 0}deg)`;
-      }
+		if (this.session && this.session.trumpSuitEl) {
+			this.session._updateTrumpSuitIconPosition();
+		}
     }
 
     this._positionSettingsButton();

@@ -390,7 +390,7 @@ body.is-mobile .card--stack-sub {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 55;/* Было 2000. Стол имеет z-index 200, поэтому козырь будет под картами стола и летящими картами */
+  z-index: 250;/* Было 2000. Стол имеет z-index 200, поэтому козырь будет под картами стола и летящими картами */
   pointer-events: none;
   /* тёмная обводка вокруг картинки — работает с любым фоном */
   filter:
