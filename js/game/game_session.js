@@ -453,7 +453,7 @@ _removeDeckShadow() {
     const p = this.scene.resolve(deckM);
 
     el.style.left = (p.x - REAL.w / 2) + 'px';
-    el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.5) + 'px'; // над колодой на пол-карты
+    el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.6) + 'px'; // над колодой на пол-карты
     el.style.transformOrigin = 'center center';
     el.style.transform = `rotate(0deg)`;  // без поворота, стоит ровно
 
@@ -587,7 +587,7 @@ _removeDeckShadow() {
 
     // карта уже на месте колоды (или где-то рядом после refill)
     const dX = card.x, dY = card.y;
-    card.setZIndex(900);
+    card.setZIndex(45);//(900);
     card.setFaceUp(false);
 
 	// 1 → 2: ARK + FLIP

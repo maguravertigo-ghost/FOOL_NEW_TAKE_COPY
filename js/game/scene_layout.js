@@ -31,6 +31,10 @@ export const DEFAULTS = {
   translateMode: true,
   tableShiftXH: 0,   // сдвиг стола по X в долях cardW (0 = без сдвига)
   deckShiftXH:  0,   // сдвиг колоды по X в долях cardW
+	// ⬇️ ДОБАВИТЬ
+	trumpShiftXH:    0,   // сдвиг карты козыря
+	arkShiftXH:      0,   // сдвиг маркера ark (промежуточный при полёте козыря)
+	subArkShiftXH:   0,   // сдвиг маркера sub_ark
 };
 /* ==================================================================
  *  Пресеты для разных устройств.
@@ -77,8 +81,11 @@ export const PRESETS = {
     tableAtkAngle:   -7,
     tableDefAngle:    9,
 	
-	tableShiftXH: -0.5,   // сдвинуть стол на пол-карты влево
-	deckShiftXH:  -0.5,   // сдвинуть колоду на пол-карты влево
+	tableShiftXH:    -0.5,   // сдвиг стола на пол-карты влево
+	deckShiftXH:      0,     // колода — на месте
+	trumpShiftXH:    -0.5,   // карта козыря — влево на пол-карты
+	arkShiftXH:      -0.5,   // ark — тоже
+	subArkShiftXH:   -0.5,   // sub_ark — тоже
   },
 };
 
@@ -123,15 +130,15 @@ export class SceneLayout {
     const deckBotY = deckY + stack_dy * (C.deckStackSize - 1);
 
     // ---- 4. trump ----
-    const trumpX = deckBotX + cw / 2;
+    const trumpX = deckBotX + cw / 2 + C.trumpShiftXH  * cw;
     const trumpY = deckBotY;
 
     // ---- 2. ark ----
-    const arkX = deckX + C.arkOffsetH * ch;
+    const arkX = deckX + C.arkOffsetH * ch + C.arkShiftXH    * cw;
     const arkY = deckY;
 
     // ---- 3. sub_ark ----
-    const subArkX = arkX;
+    const subArkX = arkX + C.subArkShiftXH * cw;
     const subArkY = trumpY;
 
     // ---- discard ----
