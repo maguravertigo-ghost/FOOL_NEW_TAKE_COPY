@@ -315,4 +315,39 @@ export const TR = {
 'credits.sfx':       'Ses efektleri',
 
 'style.random': 'RASTGELE',
+
+  'menu.achieve': 'BAŞARILAR',
+  'achieve.title': 'BAŞARILAR',
+  'achieve.close': 'MENÜYE',
+  'achieve.locked_desc': 'Bu başarı henüz açılmadı. Oynamaya devam edin!',
+
+  'achieve.first_win.title':  'İlk Zafer',
+  'achieve.first_win.desc':   'İlk maçını kazan.',
+
+  'achieve.first_lose.title': 'İlk Yenilgi',
+  'achieve.first_lose.desc':  'İlk maçında kaybet — bu da bir deneyim.',
+
+  'achieve.first_draw.title': 'İlk Beraberlik',
+  'achieve.first_draw.desc':  'Bir maçı beraberlikle bitir.',
+
+  'achieve.pogon_1.title':    'İlk Omuzluk',
+  'achieve.pogon_1.desc':     'Bir maçı tek omuzlukla bitir.',
+
+  'achieve.pogon_2.title':    'İki Omuzluk',
+  'achieve.pogon_2.desc':     'Bir maçı iki omuzlukla bitir.',
+
+  'achieve.pogon_3.title':    'Omuzluk ve Kravat',
+  'achieve.pogon_3.desc':     'Bir maçı iki omuzluk ve kravatla bitir.',
+
+  'achieve.pogon_4.title':    'Dört Omuzluk',
+  'achieve.pogon_4.desc':     'Kariyerinde dört kez omuzluk tak.',
+
+  'achieve.quest_36.title':   'Klasik Tamamlandı',
+  'achieve.quest_36.desc':    'Tüm 36 klasik görevi tamamla.',
+
+  'achieve.quest_52.title':   'Sınav Tamamlandı',
+  'achieve.quest_52.desc':    'Tüm 52 Sınav görevini tamamla.',
+
+  'achieve.collector.title':  'Alışveriş Bağımlısı',
+  'achieve.collector.desc':   'Mağazadaki tüm stil öğelerini aç.',
 };

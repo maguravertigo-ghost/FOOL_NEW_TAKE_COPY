@@ -3133,3 +3133,159 @@ body.is-mobile .mm-tab--active {
   border-color: #4caf50 !important;
   color: #fff !important;
 }
+.mm-corner--achieve {
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.mm-corner--achieve > img {
+  display: block;
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.mm-overlay__box--achievements {
+  width: min(calc(900px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+  max-height: calc(100% - calc(60px * var(--ui)));
+}
+
+.mm-achieve-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10px * var(--ui));
+}
+
+.mm-achieve-title__star {
+  width: calc(24px * var(--ui));
+  height: calc(24px * var(--ui));
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(255, 213, 79, 0.6));
+}
+
+/* Сетка: 5 колонок × 2 ряда на ПК */
+.mm-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: calc(16px * var(--ui));
+  padding: calc(8px * var(--ui)) 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.mm-achievement {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  padding: 0;
+  border-radius: calc(12px * var(--ui));
+  border: calc(2px * var(--ui)) solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.mm-achievement:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mm-achievement__img {
+  width: 75%;
+  height: 75%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mm-achievement--open .mm-achievement__img {
+  filter: drop-shadow(0 calc(2px * var(--ui)) calc(6px * var(--ui)) rgba(0, 0, 0, 0.5));
+}
+
+.mm-achievement--locked {
+  background: rgba(0, 0, 0, 0.35);
+}
+.mm-achievement--locked .mm-achievement__img {
+  filter: grayscale(1) brightness(0.5);
+  opacity: 0.45;
+}
+
+/* --- Оверлей с описанием --- */
+.mm-achieve-detail {
+  max-width: min(92vw, calc(460px * var(--ui)));
+  text-align: center;
+}
+.mm-achieve-detail__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: calc(4px * var(--ui)) 0 calc(12px * var(--ui));
+}
+.mm-achieve-detail__icon img {
+  width: calc(96px * var(--ui));
+  height: calc(96px * var(--ui));
+  object-fit: contain;
+  filter: drop-shadow(0 calc(4px * var(--ui)) calc(10px * var(--ui)) rgba(0, 0, 0, 0.5));
+}
+
+/* --- Мобилка --- */
+body.is-mobile .mm-overlay__box--achievements {
+  width: calc(100% - calc(16px * var(--ui)));
+  max-width: none;
+  max-height: calc(100% - calc(16px * var(--ui)));
+  padding: calc(16px * var(--ui));
+  gap: calc(10px * var(--ui));
+}
+body.is-mobile .mm-achieve-title {
+  font-size: max(20px, calc(26px * var(--ui)));
+}
+body.is-mobile .mm-achieve-title__star {
+  width: max(22px, calc(28px * var(--ui)));
+  height: max(22px, calc(28px * var(--ui)));
+}
+body.is-mobile .mm-overlay__box--achievements {
+  /* уже есть — но убедимся, что flex-цепочка держит сетку */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.is-mobile .mm-achievements-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: max(4px, calc(6px * var(--ui)));
+  padding: max(2px, calc(4px * var(--ui))) 0;
+  align-content: stretch;
+  overflow: hidden;       /* скролла нет */
+}
+
+body.is-mobile .mm-achievement {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;     /* ← снимаем квадрат */
+  border-radius: calc(8px * var(--ui));
+  border-width: 1px;
+}
+
+body.is-mobile .mm-achievement__img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+}
+body.is-mobile .mm-achieve-detail__icon img {
+  width: max(72px, calc(96px * var(--ui)));
+  height: max(72px, calc(96px * var(--ui)));
+}

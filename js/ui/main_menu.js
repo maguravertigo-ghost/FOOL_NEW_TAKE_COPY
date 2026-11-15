@@ -4,13 +4,14 @@ import { audio } from '../audio/audio_engine.js';
 import { withLoading } from './loading_overlay.js';
 import { ASSETS, svgInstance } from '../assets.js';
 import { GameSettings, saveSettings } from '../game/settings.js';
-  import {
+import {
     Progress, saveProgress, claimQuestReward, resetQuests,
     activeOrder, isTestModeUnlocked,
     PRICES, isPurchased, purchaseItem,
     claimableRanks,
     markStyleItemSeen, isStyleItemSeen, hasUnseenStyleItems,
     getTempMatchesLeft, isTempItem,
+    isAchievementUnlocked, unlockAchievement, unlockedCount,
   } from '../game/progress.js';
 import { showMessage, showConfirm } from './message_overlay.js';
 import { spawnCard, clearCache, warmUpDeck } from '../game/card_cache.js';
@@ -91,11 +92,12 @@ export class MainMenu {
   <button class="mm-corner mm-corner--lang" data-open="lang" title="${t('menu.language')}">${langFlagHTML(getLang())}</button>
 </div>
 
-	<!-- ПРАВЫЙ НИЗ: снизу вверх — МАГАЗИНЧИК, СТИЛЬ, КВЕСТ -->
+	<!-- ПРАВЫЙ НИЗ: снизу вверх — МАГАЗИНЧИК, СТИЛЬ, КВЕСТ, ДОСТИЖЕНИЯ -->
 <div class="mm-bottom-right">
   <button class="mm-corner" data-open="shop">${t('menu.shop')}</button>
   <button class="mm-corner" data-open="style">${t('menu.style')}</button>
   <button class="mm-corner mm-corner--quest" data-open="quest">${t('menu.quest')}</button>
+  <button class="mm-corner mm-corner--achieve" data-open="achieve" title="${t('menu.achieve')}"></button>
 </div>   `
 	;
 	this.el.style.display = 'none';
@@ -267,6 +269,7 @@ _cacheRefs() {
 	questBtn: this.el.querySelector('[data-open="quest"]'),
 	fsBtn: this.el.querySelector('[data-fs-toggle]'),
 	authBtn: this.el.querySelector('[data-auth="login"]'),
+	achieveBtn: this.el.querySelector('[data-open="achieve"]'),
   };
 }
 _layoutAll() {
@@ -370,6 +373,22 @@ _layoutAll() {
       overflow: 'visible',
       letterSpacing: H.s(1) + 'px',
     });
+  }
+
+  // --- Кнопка ДОСТИЖЕНИЯ (иконка звезды) ---
+  if (this.refs.achieveBtn) {
+    const ab = this.refs.achieveBtn;
+    // добавляем <img> один раз
+    if (!ab.querySelector('img')) {
+      const im = document.createElement('img');
+      im.src = ASSETS.starIcon;
+      im.alt = '';
+      im.draggable = false;
+      im.style.cssText = 'display:block;width:60%;height:60%;object-fit:contain;pointer-events:none;';
+      im.onerror = () => { im.remove(); ab.textContent = '★'; };
+      ab.appendChild(im);
+    }
+    // размер/позиция — как у правых кнопок (это сделает visibleSideR-блок ниже)
   }
 
   // --- Кнопка "На весь экран" — под блоком статистики, слева ---
@@ -617,6 +636,7 @@ _updateQuestBadge() {
 	if (name === 'help')     return this._openHelp();
 	if (name === 'shop')     return this._openShop();
 	if (name === 'lang')     return this._openLang();
+	if (name === 'achieve')  return this._openAchievements();
     const ov = this._getSimpleOverlay(name);
     if (!ov) return;
     ov.style.display = 'flex';
@@ -666,7 +686,7 @@ _updateQuestBadge() {
     // ---- Сетка 3×4 (сверху вниз, слева направо). null = пустая ячейка ----
 	this._grid = [
 	  ['fs',       null,         'help'],
-	  ['lang',     null,         null],
+	  ['lang',     null,         'achieve'],   // ← достижения
 	  [null,       'mode0',      'quest'],
 	  ['about',    'mode1',      'style'],
 	  ['settings', null,         'shop'],
@@ -690,6 +710,7 @@ _updateQuestBadge() {
         case 'mode0':    return this.el.querySelector('[data-mode="podkidnoy"]');
         case 'mode1':    return this.el.querySelector('[data-mode="perevodnoy"]');
 		case 'lang':     return this.el.querySelector('[data-open="lang"]');
+		case 'achieve':  return this.el.querySelector('[data-open="achieve"]');
       }
       return null;
     };
@@ -3052,4 +3073,101 @@ if (claimed) {
       list.appendChild(hint);
     }
   }
+
+  _openAchievements() {
+    let ov = this._overlays.achieve;
+    if (!ov) {
+      ov = this._buildAchievements();
+      this.el.appendChild(ov);
+      this._overlays.achieve = ov;
+    }
+    this._renderAchievements(ov);
+    ov.style.display = 'flex';
+    this._activeOverlay = ov;
+    requestAnimationFrame(() => this._autoFocusOverlay(ov, '[data-close]'));
+  }
+
+  _buildAchievements() {
+    const el = document.createElement('div');
+    el.className = 'mm-overlay';
+    el.innerHTML = `
+      <div class="mm-overlay__box mm-overlay__box--achievements">
+        <div class="mm-overlay__title mm-achieve-title">
+          <span>${t('achieve.title')}</span>
+          <img class="mm-achieve-title__star" src="${ASSETS.starIcon}" alt="">
+        </div>
+        <div class="mm-achievements-grid"></div>
+        <button class="mm-btn mm-btn--small" data-close>${t('achieve.close')}</button>
+      </div>`;
+    this._bindClose(el);
+    return el;
+  }
+
+  _renderAchievements(root) {
+    const grid = root.querySelector('.mm-achievements-grid');
+    grid.innerHTML = '';
+
+    // Список — порядок отображения в сетке
+    const ACHIEVEMENTS = [
+      'first_win', 'first_lose', 'first_draw',
+      'pogon_1', 'pogon_2', 'pogon_3', 'pogon_4',
+      'quest_36', 'quest_52', 'collector',
+    ];
+
+    for (const id of ACHIEVEMENTS) {
+      const unlocked = isAchievementUnlocked(id);
+      const src = ASSETS.achievements[id] || ASSETS.starIcon;
+
+      const tile = document.createElement('button');
+      tile.className = 'mm-achievement' + (unlocked ? ' mm-achievement--open' : ' mm-achievement--locked');
+      tile.dataset.id = id;
+
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = '';
+      img.draggable = false;
+      img.className = 'mm-achievement__img';
+      // если файла нет — подставим звезду
+      img.onerror = () => { img.src = ASSETS.starIcon; };
+      tile.appendChild(img);
+
+      tile.addEventListener('click', () => {
+        audio.playSfx('tap');
+        this._showAchievementDetail(id, unlocked);
+      });
+
+      grid.appendChild(tile);
+    }
+  }
+
+  _showAchievementDetail(id, unlocked) {
+    const title = t('achieve.' + id + '.title') || id;
+    const desc  = unlocked
+      ? t('achieve.' + id + '.desc')
+      : t('achieve.locked_desc');
+
+    const el = document.createElement('div');
+    el.className = 'msg-overlay';
+    el.style.display = 'flex';
+    el.innerHTML = `
+      <div class="msg-overlay__box mm-achieve-detail">
+        <div class="mm-achieve-detail__icon">
+          <img src="${ASSETS.achievements[id] || ASSETS.starIcon}" alt=""
+               onerror="this.src='${ASSETS.starIcon}'"
+               style="${unlocked ? '' : 'filter:grayscale(1);opacity:.35'}">
+        </div>
+        <div class="msg-overlay__title">${title}</div>
+        <div class="msg-overlay__body">${desc}</div>
+        <button class="mm-btn mm-btn--small" data-close>${t('dialog.ok')}</button>
+      </div>`;
+    document.getElementById('scene').appendChild(el);
+
+    const close = () => {
+      audio.playSfx('tap_up');
+      el.remove();
+    };
+    el.querySelector('[data-close]').addEventListener('click', close);
+    el.addEventListener('click', (e) => { if (e.target === el) close(); });
+  }
+
 }

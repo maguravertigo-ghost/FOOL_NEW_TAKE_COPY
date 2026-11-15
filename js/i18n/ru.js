@@ -317,4 +317,39 @@ export const RU = {
 'credits.sfx':       'Звуковые эффекты',
 
 'style.random': 'СЛУЧАЙНЫЙ',
+
+  'menu.achieve': 'ДОСТИЖЕНИЯ',
+  'achieve.title': 'ДОСТИЖЕНИЯ',
+  'achieve.close': 'В МЕНЮ',
+  'achieve.locked_desc': 'Достижение ещё не открыто. Продолжайте играть!',
+
+  'achieve.first_win.title':  'Первая победа',
+  'achieve.first_win.desc':   'Выиграйте свой первый матч.',
+
+  'achieve.first_lose.title': 'Первое поражение',
+  'achieve.first_lose.desc':  'Проиграйте первый матч — это тоже опыт.',
+
+  'achieve.first_draw.title': 'Первая ничья',
+  'achieve.first_draw.desc':  'Закончите матч вничью.',
+
+  'achieve.pogon_1.title':    'Первый погон',
+  'achieve.pogon_1.desc':     'Закончите матч с одним погоном.',
+
+  'achieve.pogon_2.title':    'Два погона',
+  'achieve.pogon_2.desc':     'Закончите матч с двумя погонами.',
+
+  'achieve.pogon_3.title':    'Погоны и галстук',
+  'achieve.pogon_3.desc':     'Закончите матч с двумя погонами и галстуком.',
+
+  'achieve.pogon_4.title':    'Четыре погона',
+  'achieve.pogon_4.desc':     'Повесьте погоны четыре раза за игру.',
+
+  'achieve.quest_36.title':   'Классика пройдена',
+  'achieve.quest_36.desc':    'Выполните все 36 квестов классического режима.',
+
+  'achieve.quest_52.title':   'Испытание пройдено',
+  'achieve.quest_52.desc':    'Выполните все 52 квеста режима Испытание.',
+
+  'achieve.collector.title':  'Шопоголик',
+  'achieve.collector.desc':   'Откройте все элементы стиля в магазине.',
 };

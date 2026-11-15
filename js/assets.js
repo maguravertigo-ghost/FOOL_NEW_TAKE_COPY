@@ -27,6 +27,18 @@ export const ASSETS = {
   settingsIcon: `${BASE}/hud/settings_icon.svg`,
   fullscreenIcon: `${BASE}/hud/icons/fullscreen.svg`,
   starIcon: `${BASE}/hud/icons/star.svg`,
+  achievements: {
+    first_win:   `${BASE}/hud/achievments/figure.webp`,
+    first_lose:  `${BASE}/hud/achievments/hat.webp`,
+    first_draw:  `${BASE}/hud/achievments/shake_hands.webp`,
+    pogon_1:     `${BASE}/hud/achievments/bell.webp`,
+    pogon_2:     `${BASE}/hud/achievments/butterfly.webp`,
+    pogon_3:     `${BASE}/hud/achievments/fly.webp`,
+    pogon_4:     `${BASE}/hud/achievments/clever.webp`,
+    quest_36:    `${BASE}/hud/achievments/pot_of_gold.webp`,
+    quest_52:    `${BASE}/hud/achievments/crown.webp`,
+    collector:   `${BASE}/hud/achievments/chest.webp`,
+  },
   shopIcons: {
     shirt:  `${BASE}/hud/icons/shirts.svg`,
     design: `${BASE}/hud/icons/styles.svg`,

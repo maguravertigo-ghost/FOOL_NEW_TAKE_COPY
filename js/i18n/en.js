@@ -307,4 +307,39 @@ export const EN = {
 'credits.sfx':       'Sound effects',
 
 'style.random': 'RANDOM',
+
+  'menu.achieve': 'ACHIEVEMENTS',
+  'achieve.title': 'ACHIEVEMENTS',
+  'achieve.close': 'TO MENU',
+  'achieve.locked_desc': 'This achievement is not unlocked yet. Keep playing!',
+
+  'achieve.first_win.title':  'First Victory',
+  'achieve.first_win.desc':   'Win your first match.',
+
+  'achieve.first_lose.title': 'First Defeat',
+  'achieve.first_lose.desc':  'Lose a first match — it\'s experience too.',
+
+  'achieve.first_draw.title': 'First Draw',
+  'achieve.first_draw.desc':  'Finish a match in a draw.',
+
+  'achieve.pogon_1.title':    'First Epaulette',
+  'achieve.pogon_1.desc':     'Finish a match with one epaulette.',
+
+  'achieve.pogon_2.title':    'Two Epaulettes',
+  'achieve.pogon_2.desc':     'Finish a match with two epaulettes.',
+
+  'achieve.pogon_3.title':    'Epaulettes & Tie',
+  'achieve.pogon_3.desc':     'Finish a match with two epaulettes and a tie.',
+
+  'achieve.pogon_4.title':    'Four Epaulettes',
+  'achieve.pogon_4.desc':     'Hang epaulettes four times in your career.',
+
+  'achieve.quest_36.title':   'Classic Completed',
+  'achieve.quest_36.desc':    'Complete all 36 classic quests.',
+
+  'achieve.quest_52.title':   'Trial Completed',
+  'achieve.quest_52.desc':    'Complete all 52 Trial quests.',
+
+  'achieve.collector.title':  'Shopaholic',
+  'achieve.collector.desc':   'Unlock all style items in the shop.',
 };

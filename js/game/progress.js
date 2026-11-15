@@ -17,6 +17,7 @@ function defaultState() {
 	giftGiven: false,
 	tempItems: null,
 	trialUnlocked: false,
+	achievements: {},     // { [id]: { unlockedAt: timestamp } }
 	
 	  // Счётчик подряд идущих побед/поражений на текущей сложности.
 	  // Сбрасывается при смене сложности или ничьей.
@@ -52,6 +53,7 @@ function load() {
 	  tempItems: p.tempItems ?? null,
 	  trialUnlocked: p.trialUnlocked ?? false,   // ← ДОБАВИТЬ
 	  streak:        p.streak || { level: 1, wins: 0, losses: 0 },   // ← ДОБАВИТЬ
+	  achievements: p.achievements || {},
     };
   } catch { return defaultState(); }
 }
@@ -321,6 +323,7 @@ export function resetAll() {
 
   Progress.trialUnlocked = false;
   Progress.streak = { level: 1, wins: 0, losses: 0 };   // ← ДОБАВИТЬ
+  Progress.achievements = {};
   saveProgress();
 }
 
@@ -373,4 +376,28 @@ export function purchaseItem(cat, index, price) {
   Progress.purchases[cat].push(index);
   saveProgress();
   return { ok: true };
+}
+
+/* ================================================================
+ *  ДОСТИЖЕНИЯ
+ * ================================================================ */
+
+export function isAchievementUnlocked(id) {
+  return !!(Progress.achievements && Progress.achievements[id]);
+}
+
+/**
+ * Открыть достижение. Возвращает true, если только что открыто
+ * (false — если уже было).
+ */
+export function unlockAchievement(id) {
+  if (!Progress.achievements) Progress.achievements = {};
+  if (Progress.achievements[id]) return false;
+  Progress.achievements[id] = { unlockedAt: Date.now() };
+  saveProgress();
+  return true;
+}
+
+export function unlockedCount() {
+  return Object.keys(Progress.achievements || {}).length;
 }
