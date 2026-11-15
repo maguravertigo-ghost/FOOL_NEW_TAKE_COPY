@@ -19,10 +19,10 @@ const PRIORITY = [
 export const AchievementManager = {
   /**
    * Вызывать в конце матча (после recordOutcome).
-   * @param {{ winner: 'player'|'cpu'|'draw', epaulettes: number }} ctx
+   * @param {{ winner: 'player'|'cpu'|'draw', pogonsThrown: number }} ctx
    * @returns {string[]} массив ID только что открытых достижений
    */
-  check({ winner, epaulettes }) {
+    check({ winner, pogonsThrown }) {
     const newly = [];
 
     // ---- 1. Первая победа / поражение / ничья ----
@@ -36,19 +36,20 @@ export const AchievementManager = {
       if (unlockAchievement('first_draw')) newly.push('first_draw');
     }
 
-    // ---- 2. Погоны (1, 2, 3 — за один матч) ----
-    if (winner === 'player' && epaulettes >= 1) {
+    // ---- 2. Погоны — ТОЧНОЕ число выброшенных карт одного ранга ----
+    // 1 карта → pogon_1, 2 карты → pogon_2, 3 карты → pogon_3, 4 карты → pogon_4.
+    // События независимые: выкинул 4 — открывается только pogon_4.
+    // Отдельные pogon_1/2/3 откроются в других матчах, где выбросишь 1/2/3.
+    if (winner === 'player' && pogonsThrown === 1) {
       if (unlockAchievement('pogon_1')) newly.push('pogon_1');
     }
-    if (winner === 'player' && epaulettes >= 2) {
+    if (winner === 'player' && pogonsThrown === 2) {
       if (unlockAchievement('pogon_2')) newly.push('pogon_2');
     }
-    if (winner === 'player' && epaulettes >= 3) {
+    if (winner === 'player' && pogonsThrown === 3) {
       if (unlockAchievement('pogon_3')) newly.push('pogon_3');
     }
-
-    // ---- 3. Четыре погона (накопительно за карьеру) ----
-    if ((Progress.totalEpaulettes || 0) >= 4 && !isAchievementUnlocked('pogon_4')) {
+    if (winner === 'player' && pogonsThrown === 4) {
       if (unlockAchievement('pogon_4')) newly.push('pogon_4');
     }
 

@@ -3217,27 +3217,95 @@ body.is-mobile .mm-tab--active {
 .mm-achievement--locked {
   background: rgba(0, 0, 0, 0.35);
 }
-.mm-achievement--locked .mm-achievement__img {
-  filter: grayscale(1) brightness(0.5);
-  opacity: 0.45;
-}
 
 /* --- Оверлей с описанием --- */
 .mm-achieve-detail {
-  max-width: min(92vw, calc(460px * var(--ui)));
-  text-align: center;
+  display: flex;
+  flex-direction: row;
+  width: min(calc(780px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-height: calc(100% - calc(40px * var(--ui)));
+  padding: calc(24px * var(--ui));
+  background: rgba(25, 25, 30, 0.98);
+  border: 2px solid #444;
+  border-radius: calc(14px * var(--ui));
+  box-shadow: 0 calc(14px * var(--ui)) calc(44px * var(--ui)) rgba(0, 0, 0, 0.6);
+  gap: calc(20px * var(--ui));
+  box-sizing: border-box;
+  animation: mm-fade-in 0.15s ease;
 }
-.mm-achieve-detail__icon {
+
+.mm-achieve-detail__img-wrap {
+  flex: 0 0 auto;
+  width: calc(260px * var(--ui));
+  height: calc(260px * var(--ui));
+  border: calc(2px * var(--ui)) solid rgba(255, 255, 255, 0.15);
+  border-radius: calc(12px * var(--ui));
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: calc(4px * var(--ui)) 0 calc(12px * var(--ui));
+  overflow: hidden;
 }
-.mm-achieve-detail__icon img {
-  width: calc(96px * var(--ui));
-  height: calc(96px * var(--ui));
+.mm-achieve-detail__img-wrap img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 calc(4px * var(--ui)) calc(10px * var(--ui)) rgba(0, 0, 0, 0.5));
+}
+
+.mm-achieve-detail__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--ui));
+  min-width: 0;
+}
+
+.mm-achieve-detail__title {
+  font-size: calc(26px * var(--ui));
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: calc(1px * var(--ui));
+  line-height: 1.2;
+}
+
+.mm-achieve-detail__sep {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.mm-achieve-detail__desc {
+  flex: 1 1 auto;
+  color: #ccc;
+  font-size: calc(16px * var(--ui));
+  line-height: 1.55;
+  overflow-y: auto;
+}
+
+.mm-achieve-detail__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: calc(8px * var(--ui));
+}
+
+/* Мобилка — вертикально: картинка сверху, текст/кнопка снизу */
+body.is-mobile .mm-achieve-detail {
+  width: calc(100% - calc(16px * var(--ui)));
+  max-height: calc(100% - calc(16px * var(--ui)));
+  padding: calc(16px * var(--ui));
+  flex-direction: column;
+  gap: calc(12px * var(--ui));
+}
+body.is-mobile .mm-achieve-detail__img-wrap {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  max-height: 45vh;
+}
+body.is-mobile .mm-achieve-detail__title {
+  font-size: max(20px, calc(24px * var(--ui)));
+}
+body.is-mobile .mm-achieve-detail__desc {
+  font-size: max(14px, calc(16px * var(--ui)));
 }
 
 /* --- Мобилка --- */
@@ -3297,11 +3365,11 @@ body.is-mobile .mm-achieve-detail__icon img {
   gap: calc(14px * var(--ui));
   padding: calc(10px * var(--ui)) calc(20px * var(--ui));
   background: rgba(25, 25, 30, 0.97);
-  border: calc(2px * var(--ui)) solid #ffb74d;
   border-radius: calc(12px * var(--ui));
+  border: calc(4px * var(--ui)) solid #ff9800;
   box-shadow:
     0 calc(8px * var(--ui)) calc(24px * var(--ui)) rgba(0, 0, 0, 0.6),
-    0 0 calc(24px * var(--ui)) rgba(255, 183, 77, 0.3);
+    0 0 calc(32px * var(--ui)) rgba(255, 152, 0, 0.55);
   z-index: 2;
   pointer-events: none;
   animation: ach-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -3368,6 +3436,7 @@ body.is-mobile .ach-banner {
   gap: max(10px, calc(12px * var(--ui)));
   top: max(10px, calc(12px * var(--ui)));
   max-width: calc(100% - calc(24px * var(--ui)));
+  border-width: calc(3px * var(--ui));
 }
 body.is-mobile .ach-banner__img {
   width: max(44px, calc(56px * var(--ui)));

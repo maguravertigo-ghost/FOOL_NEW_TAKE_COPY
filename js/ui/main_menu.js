@@ -3120,7 +3120,9 @@ if (claimed) {
 
     for (const id of ACHIEVEMENTS) {
       const unlocked = isAchievementUnlocked(id);
-      const src = ASSETS.achievements[id] || ASSETS.starIcon;
+      const src = unlocked
+        ? (ASSETS.achievements[id] || ASSETS.starIcon)
+        : ASSETS.starIcon;   // ← закрытые ВСЕГДА звезда
 
       const tile = document.createElement('button');
       tile.className = 'mm-achievement' + (unlocked ? ' mm-achievement--open' : ' mm-achievement--locked');
@@ -3149,20 +3151,26 @@ if (claimed) {
     const desc  = unlocked
       ? t('achieve.' + id + '.desc')
       : t('achieve.locked_desc');
+    const src = unlocked
+      ? (ASSETS.achievements[id] || ASSETS.starIcon)
+      : ASSETS.starIcon;
 
     const el = document.createElement('div');
     el.className = 'msg-overlay';
     el.style.display = 'flex';
     el.innerHTML = `
-      <div class="msg-overlay__box mm-achieve-detail">
-        <div class="mm-achieve-detail__icon">
-          <img src="${ASSETS.achievements[id] || ASSETS.starIcon}" alt=""
-               onerror="this.src='${ASSETS.starIcon}'"
-               style="${unlocked ? '' : 'filter:grayscale(1);opacity:.35'}">
+      <div class="mm-achieve-detail">
+        <div class="mm-achieve-detail__img-wrap">
+          <img src="${src}" alt="" onerror="this.src='${ASSETS.starIcon}'">
         </div>
-        <div class="msg-overlay__title">${title}</div>
-        <div class="msg-overlay__body">${desc}</div>
-        <button class="mm-btn mm-btn--small" data-close>${t('dialog.ok')}</button>
+        <div class="mm-achieve-detail__content">
+          <div class="mm-achieve-detail__title">${title}</div>
+          <div class="mm-achieve-detail__sep"></div>
+          <div class="mm-achieve-detail__desc">${desc}</div>
+          <div class="mm-achieve-detail__footer">
+            <button class="mm-btn mm-btn--small" data-close>${t('dialog.ok')}</button>
+          </div>
+        </div>
       </div>`;
     document.getElementById('scene').appendChild(el);
 

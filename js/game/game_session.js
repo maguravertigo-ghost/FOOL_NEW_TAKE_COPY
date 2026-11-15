@@ -25,7 +25,7 @@ import { t } from '../i18n/index.js';
 
 import { AchievementManager } from './achievements.js';
 import { createAchievementBanner } from '../ui/achievement_banner.js';
-import { addTotalEpaulettes } from './progress.js';
+//import { addTotalEpaulettes } from './progress.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const Z_HAND_BASE  = 100;
@@ -1182,11 +1182,13 @@ else                           this._jokerFrame('five');  // ничья
     if (points > 0) addStylePoints(points);
     recordOutcome(winner, GameSettings.aiLevel);
 	
-	    // ---- Достижения ----
-    if (epaulettes > 0 && winner === 'player') {
-      addTotalEpaulettes(epaulettes);
-    }
-    const newlyUnlocked = AchievementManager.check({ winner, epaulettes });
+    // ---- Достижения ----
+    // pogonsThrown — реальное число выброшенных карт одного ранга
+    // (не капается, в отличие от epaulettes, который для визуала максимум 3)
+    const pogonsThrown = (winner === 'player' && this._finishedViaPogony)
+      ? (this._finishedHandCount || 0)
+      : 0;
+    const newlyUnlocked = AchievementManager.check({ winner, pogonsThrown });
  
     // ---- Обновление жетона дурака ----
     const prevOwner = Progress.foolToken ? Progress.foolToken.owner : null;
