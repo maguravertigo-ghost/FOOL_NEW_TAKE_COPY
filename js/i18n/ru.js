@@ -315,4 +315,6 @@ export const RU = {
 'credits.title':     'БЛАГОДАРНОСТИ',
 'credits.cardbacks': 'Рубашки карт',
 'credits.sfx':       'Звуковые эффекты',
+
+'style.random': 'СЛУЧАЙНЫЙ',
 };

@@ -305,4 +305,6 @@ export const EN = {
 'credits.title':     'CREDITS',
 'credits.cardbacks': 'Card backs',
 'credits.sfx':       'Sound effects',
+
+'style.random': 'RANDOM',
 };

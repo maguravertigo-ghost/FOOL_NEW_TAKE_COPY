@@ -29,6 +29,8 @@ export const DEFAULTS = {
   tableDefAngle:    8,
   tableSlots:       6,
   translateMode: true,
+  tableShiftXH: 0,   // сдвиг стола по X в долях cardW (0 = без сдвига)
+  deckShiftXH:  0,   // сдвиг колоды по X в долях cardW
 };
 /* ==================================================================
  *  Пресеты для разных устройств.
@@ -74,6 +76,9 @@ export const PRESETS = {
     tablePairDropH:   0.25,
     tableAtkAngle:   -7,
     tableDefAngle:    9,
+	
+	tableShiftXH: -0.5,   // сдвинуть стол на пол-карты влево
+	deckShiftXH:  -0.5,   // сдвинуть колоду на пол-карты влево
   },
 };
 
@@ -108,8 +113,8 @@ export class SceneLayout {
     const cyPx = H / 2 - C.centerLift * H;
 
     // ---- 1. deck ----
-    const deckX = L + cw / 2;
-    const deckY = cyPx;
+	const deckX = L + cw / 2 + C.deckShiftXH * cw;
+	const deckY = cyPx;
 
     // ---- низ колоды ----
     const stack_dx = C.deckStackDx * cw;
@@ -153,7 +158,7 @@ export class SceneLayout {
     // ---- стол ----
     const tblW   = (R - L) - C.tableMarginXH * ch * 2;
     const tblH   = C.tableRowsH * ch;
-    const tblL   = (W - tblW) / 2;
+    const tblL = (W - tblW) / 2 + C.tableShiftXH * cw;
     const tblCy  = cyPx;
 
     const tblTopY = tblCy - tblH / 2;

@@ -818,7 +818,17 @@ body.is-mobile .mm-style-points__value {
   gap: calc(16px * var(--ui));
   width: min(70vw, calc(360px * var(--ui)));
 }
-
+.mm-btn:disabled,
+.mm-btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+.mm-btn:disabled:hover,
+.mm-btn--disabled:hover {
+  background: inherit;
+  transform: none;
+}
 .mm-btn {
   padding: calc(16px * var(--ui)) calc(24px * var(--ui));
   font: 700 calc(18px * var(--ui)) system-ui, sans-serif;

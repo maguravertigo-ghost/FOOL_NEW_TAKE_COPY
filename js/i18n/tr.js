@@ -313,4 +313,6 @@ export const TR = {
 'credits.title':     'TEŞEKKÜRLER',
 'credits.cardbacks': 'Kart sırtları',
 'credits.sfx':       'Ses efektleri',
+
+'style.random': 'RASTGELE',
 };

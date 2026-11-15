@@ -2035,8 +2035,62 @@ _openStyle() {
   ov.style.display = 'flex';
   this._activeOverlay = ov;
   this._styleNav = { level: 'tabs', tabIdx: 0, tileIdx: 0, footerIdx: 0 };
+  this._refreshRandomButton(ov);
   requestAnimationFrame(() => this._focusStyleDefault());
 }
+
+  _refreshRandomButton(ov) {
+    const btn = ov && ov.querySelector('[data-random]');
+    if (!btn) return;
+    // Есть ли хоть одна категория с 2+ доступными вариантами?
+    const cats = ['shirt', 'design', 'suits', 'table', 'decor'];
+    let canRandom = false;
+    for (const cat of cats) {
+      const items = this._styleItemsFor(cat);
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        if (isPurchased(cat, i)) count++;
+      }
+      if (count >= 2) { canRandom = true; break; }
+    }
+    btn.disabled = !canRandom;
+    btn.classList.toggle('mm-btn--disabled', !canRandom);
+  }
+
+  _applyRandomStyle() {
+    const cats = ['shirt', 'design', 'suits', 'table', 'decor'];
+    let changed = false;
+
+    for (const cat of cats) {
+      const items = this._styleItemsFor(cat);
+      const purchased = (Progress.purchases[cat] || []);
+      
+      // Для decor: unlocked = только purchased (по special-логике isPurchased)
+      // Для остальных: purchased (isPurchased дополнительно включает tempItems, но
+      // для рандома берём только постоянные покупки — так проще и понятнее игроку)
+      const available = [];
+      for (let i = 0; i < items.length; i++) {
+        if (isPurchased(cat, i)) available.push(i);
+      }
+      
+      // Если в категории нет выбора (0 или 1 вариант) — пропускаем
+      if (available.length <= 1) continue;
+      
+      // Если текущий уже случайно выбран в прошлый раз — не меняем
+      // (но это не важно, тут мы просто всегда рандомим)
+      const pick = available[Math.floor(Math.random() * available.length)];
+      
+      // Применяем
+      this._selectedStyle[cat] = pick;
+      this._applyStyleItem(cat, items[pick]);
+      changed = true;
+    }
+
+    if (changed) {
+      audio.playSfx('tap_up');
+    }
+  }
+
   _buildStyle() {
     const el = document.createElement('div');
     el.className = 'mm-overlay';
@@ -2053,6 +2107,7 @@ el.innerHTML = `
     <div class="mm-tiles"></div>
     <div class="mm-overlay__footer">
       <button class="mm-btn" data-preview>${t('style.preview')}</button>
+      <button class="mm-btn" data-random>${t('style.random')}</button>
       <button class="mm-btn mm-btn--small" data-close>${t('style.close')}</button>
     </div>
   </div>`;
@@ -2061,6 +2116,11 @@ el.innerHTML = `
 	  audio.playSfx('tap_up');
 	  this._openPreview();
 	});
+	el.querySelector('[data-random]').addEventListener('click', () => {
+		audio.playSfx('switch');
+		this._applyRandomStyle();
+		this._renderStyleTiles(el);
+	  });
     el.querySelectorAll('.mm-tab').forEach(tab =>
       tab.addEventListener('click', () => {
 		audio.playSfx('switch');

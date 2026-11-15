@@ -162,6 +162,21 @@ shirts: [
     clubs:    `${BASE}/card_body/suits/default/clubs.svg`,
     spades:   `${BASE}/card_body/suits/default/spades.svg`,
   }
+  
+  starIcon: `${BASE}/hud/icons/star.svg`,
+};
+
+const ACHIEVEMENT_ICONS = {
+  first_win:    'assets/hud/achievments/figure.webp',
+  first_lose:   'assets/hud/achievments/hat.webp',
+  first_draw:   'assets/hud/achievments/shake_hands.webp',
+  pogon_1:      'assets/hud/achievments/bell.webp',
+  pogon_2:      'assets/hud/achievments/butterfly.webp',
+  pogon_3:      'assets/hud/achievments/fly.webp',
+  pogon_4:      'assets/hud/achievments/clever.webp',
+  quest_36:     'assets/hud/achievments/pot_of_gold.webp',
+  quest_52:     'assets/hud/achievments/crown.webp',
+  collector:    'assets/hud/achievments/chest.webp',
 };
 
 // ---------- Кэш инлайн-SVG ----------

@@ -354,6 +354,8 @@ _ensureDeckShadow() {
       this.deckCounterEl.style.top  = (bottomY + padY) + 'px';
     } else {
       const p = this.scene.resolve(deckM);
+		el.style.left = (p.x - REAL.w / 2) + 'px';
+		el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.5) + 'px';  // выше колоды на пол-карты
       this.deckCounterEl.classList.remove('deck-counter--mobile');
       this.deckCounterEl.style.left = p.x + 'px';
       this.deckCounterEl.style.top  = p.y + 'px';
@@ -436,7 +438,7 @@ _removeDeckShadow() {
 
   _showTrumpSuitIcon() {
     if (this.trumpSuitEl) return;
-    const trumpM = this.markers.get('trump');
+    const deckM = this.markers.get('deck');
     const el = document.createElement('div');
     el.className = 'trump-suit';
     el.style.width  = REAL.w + 'px';
