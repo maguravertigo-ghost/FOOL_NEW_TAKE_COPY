@@ -28,16 +28,16 @@ export const ASSETS = {
   fullscreenIcon: `${BASE}/hud/icons/fullscreen.svg`,
   starIcon: `${BASE}/hud/icons/star.svg`,
   achievements: {
-    first_win:   `${BASE}/hud/achievments/figure.webp`,
-    first_lose:  `${BASE}/hud/achievments/hat.webp`,
-    first_draw:  `${BASE}/hud/achievments/shake_hands.webp`,
-    pogon_1:     `${BASE}/hud/achievments/bell.webp`,
-    pogon_2:     `${BASE}/hud/achievments/butterfly.webp`,
-    pogon_3:     `${BASE}/hud/achievments/fly.webp`,
-    pogon_4:     `${BASE}/hud/achievments/clever.webp`,
-    quest_36:    `${BASE}/hud/achievments/pot_of_gold.webp`,
-    quest_52:    `${BASE}/hud/achievments/crown.webp`,
-    collector:   `${BASE}/hud/achievments/chest.webp`,
+    first_win:   `${BASE}/hud/achievements/figure.webp`, // ферзь - королева
+    first_lose:  `${BASE}/hud/achievements/hat.webp`, // шапка джокера
+    first_draw:  `${BASE}/hud/achievements/shake_hands.webp`, // рукопожатие
+    pogon_1:     `${BASE}/hud/achievements/bell.webp`, // колокольчик джокера
+    pogon_2:     `${BASE}/hud/achievements/butterfly.webp`, // бабочка
+    pogon_3:     `${BASE}/hud/achievements/fly.webp`, // стрекоза
+    pogon_4:     `${BASE}/hud/achievements/clever.webp`, // четырёхлистник клевера
+    quest_36:    `${BASE}/hud/achievements/pot_of_gold.webp`, // горшочек с золотом
+    quest_52:    `${BASE}/hud/achievements/crown.webp`, // корона
+    collector:   `${BASE}/hud/achievements/chest.webp`, // сундук с сокровищами
   },
   shopIcons: {
     shirt:  `${BASE}/hud/icons/shirts.svg`,
@@ -177,16 +177,16 @@ shirts: [
 };
 
 const ACHIEVEMENT_ICONS = {
-  first_win:    'assets/hud/achievments/figure.webp',
-  first_lose:   'assets/hud/achievments/hat.webp',
-  first_draw:   'assets/hud/achievments/shake_hands.webp',
-  pogon_1:      'assets/hud/achievments/bell.webp',
-  pogon_2:      'assets/hud/achievments/butterfly.webp',
-  pogon_3:      'assets/hud/achievments/fly.webp',
-  pogon_4:      'assets/hud/achievments/clever.webp',
-  quest_36:     'assets/hud/achievments/pot_of_gold.webp',
-  quest_52:     'assets/hud/achievments/crown.webp',
-  collector:    'assets/hud/achievments/chest.webp',
+  first_win:    'assets/hud/achievements/figure.webp',
+  first_lose:   'assets/hud/achievements/hat.webp',
+  first_draw:   'assets/hud/achievements/shake_hands.webp',
+  pogon_1:      'assets/hud/achievements/bell.webp',
+  pogon_2:      'assets/hud/achievements/butterfly.webp',
+  pogon_3:      'assets/hud/achievements/fly.webp',
+  pogon_4:      'assets/hud/achievements/clever.webp',
+  quest_36:     'assets/hud/achievements/pot_of_gold.webp',
+  quest_52:     'assets/hud/achievements/crown.webp',
+  collector:    'assets/hud/achievements/chest.webp',
 };
 
 // ---------- Кэш инлайн-SVG ----------
@@ -383,6 +383,8 @@ export function preloadMenuAssets() {
   return preloadUrls([
     ASSETS.foolToken,
     ASSETS.jokerFaceSmiling,
+    // ⬇️ ДОБАВИТЬ
+    ...Object.values(ASSETS.achievements),
   ]);
 }
 
