@@ -83,9 +83,9 @@ export const PRESETS = {
 	
 	tableShiftXH:    -0.5,   // сдвиг стола на пол-карты влево
 	deckShiftXH:      0,     // колода — на месте
-	trumpShiftXH:    -0.5,   // карта козыря — влево на пол-карты
-	arkShiftXH:      -0.5,   // ark — тоже
-	subArkShiftXH:   -0.5,   // sub_ark — тоже
+	trumpShiftXH:    -0.4,   // карта козыря — влево на пол-карты
+	arkShiftXH:      -0.4,   // ark — тоже
+	subArkShiftXH:   -0.4,   // sub_ark — тоже
   },
 };
 
