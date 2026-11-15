@@ -447,15 +447,24 @@ _removeDeckShadow() {
 
     this.gameLayer.appendChild(el);
 
-    // Привязываем к маркеру колоды (а не козыря),
-    // чтобы после сдвига стола влево (deckShiftXH) символ остался над колодой
-    const deckM = this.markers.get('deck');
-    const p = this.scene.resolve(deckM);
+    const deckM  = this.markers.get('deck');
+    const trumpM = this.markers.get('trump');
 
-    el.style.left = (p.x - REAL.w / 2) + 'px';
-    el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.6) + 'px'; // над колодой на пол-карты
-    el.style.transformOrigin = 'center center';
-    el.style.transform = `rotate(0deg)`;  // без поворота, стоит ровно
+    if (uiScale.isMobile) {
+      // Мобилка: значок НАД колодой, смотрит вверх (rotate 0)
+      const p = this.scene.resolve(deckM);
+      el.style.left = (p.x - REAL.w / 2) + 'px';
+      el.style.top  = (p.y - REAL.h / 2 - REAL.h * 0.6) + 'px';
+      el.style.transformOrigin = 'center center';
+      el.style.transform = `rotate(0deg)`;
+    } else {
+      // ПК: как раньше — на маркере козыря, повёрнут вместе с картой
+      const p = this.scene.resolve(trumpM);
+      el.style.left = (p.x - REAL.w / 2) + 'px';
+      el.style.top  = (p.y - REAL.h / 2) + 'px';
+      el.style.transformOrigin = 'center center';
+      el.style.transform = `rotate(${trumpM.angle || 0}deg)`;
+    }
 
     this.trumpSuitEl = el;
   }
