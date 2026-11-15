@@ -3285,3 +3285,101 @@ body.is-mobile .mm-achieve-detail__icon img {
   width: max(72px, calc(96px * var(--ui)));
   height: max(72px, calc(96px * var(--ui)));
 }
+
+/* === Баннер достижения === */
+.ach-banner {
+  position: absolute;
+  top: calc(16px * var(--ui));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(14px * var(--ui));
+  padding: calc(10px * var(--ui)) calc(20px * var(--ui));
+  background: rgba(25, 25, 30, 0.97);
+  border: calc(2px * var(--ui)) solid #ffb74d;
+  border-radius: calc(12px * var(--ui));
+  box-shadow:
+    0 calc(8px * var(--ui)) calc(24px * var(--ui)) rgba(0, 0, 0, 0.6),
+    0 0 calc(24px * var(--ui)) rgba(255, 183, 77, 0.3);
+  z-index: 2;
+  pointer-events: none;
+  animation: ach-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ach-in {
+  from { opacity: 0; transform: translate(-50%, -30px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.ach-banner__img {
+  width: calc(56px * var(--ui));
+  height: calc(56px * var(--ui));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(6px * var(--ui)) rgba(255, 183, 77, 0.6));
+  flex-shrink: 0;
+}
+
+.ach-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2px * var(--ui));
+  min-width: 0;
+}
+
+.ach-banner__label {
+  font-size: calc(11px * var(--ui));
+  color: #ffb74d;
+  letter-spacing: calc(2px * var(--ui));
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ach-banner__title {
+  font-size: calc(16px * var(--ui));
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Плавающий вариант (в меню, z-index выше) */
+.ach-banner--floating {
+  position: fixed;
+  top: calc(20px * var(--ui));
+  z-index: 2000;   /* выше меню (z-index 500), выше fade (900) */
+}
+
+.ach-banner--out {
+  animation: ach-out 0.55s ease forwards;
+}
+
+@keyframes ach-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to   { opacity: 0; transform: translate(-50%, -40px); }
+}
+
+/* Мобилка */
+body.is-mobile .ach-banner {
+  padding: max(8px, calc(10px * var(--ui))) max(14px, calc(20px * var(--ui)));
+  gap: max(10px, calc(12px * var(--ui)));
+  top: max(10px, calc(12px * var(--ui)));
+  max-width: calc(100% - calc(24px * var(--ui)));
+}
+body.is-mobile .ach-banner__img {
+  width: max(44px, calc(56px * var(--ui)));
+  height: max(44px, calc(56px * var(--ui)));
+}
+body.is-mobile .ach-banner__label {
+  font-size: max(10px, calc(12px * var(--ui)));
+}
+body.is-mobile .ach-banner__title {
+  font-size: max(14px, calc(16px * var(--ui)));
+  white-space: normal;
+}
+body.is-mobile .ach-banner--floating {
+  top: max(14px, calc(20px * var(--ui)));
+}

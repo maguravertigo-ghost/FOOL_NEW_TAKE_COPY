@@ -350,4 +350,6 @@ export const TR = {
 
   'achieve.collector.title':  'Alışveriş Bağımlısı',
   'achieve.collector.desc':   'Mağazadaki tüm stil öğelerini aç.',
+
+'achieve.unlocked': 'BAŞARI AÇILDI',
 };

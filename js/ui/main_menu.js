@@ -25,6 +25,9 @@ import { attachTokenMark } from './fool_token_mark.js';
 import { t, getLang, getAvailableLangs } from '../i18n/index.js';
 import { Tutorial } from './tutorial.js';
 
+import { popPendingAchievement, peekPendingAchievement } from '../game/progress.js';
+import { showFloatingAchievement } from './achievement_banner.js';
+
 // Если SVG-файлы ещё не добавлены — используется эмодзи как fallback.
 // Как только появятся assets/flags/ru.svg (en.svg, tr.svg) — картинка
 // подхватится автоматически (по onerror → эмодзи).
@@ -468,6 +471,7 @@ show() {
   this._closeOverlay();
   this._layoutAll();
   bus.resume('ui.main-menu');
+  this._checkPendingAchievement();
 }
   hide() {
     this.el.style.display = 'none';
@@ -3168,6 +3172,21 @@ if (claimed) {
     };
     el.querySelector('[data-close]').addEventListener('click', close);
     el.addEventListener('click', (e) => { if (e.target === el) close(); });
+  }
+
+  _checkPendingAchievement() {
+    const id = peekPendingAchievement();
+    if (!id) return;
+
+    // Задержка, чтобы меню успело отрисоваться
+    setTimeout(() => {
+      // Перепроверяем на случай, если игрок успел открыть оверлей
+      const stillPending = peekPendingAchievement();
+      if (!stillPending) return;
+
+      popPendingAchievement();
+      showFloatingAchievement(stillPending, 10000);
+    }, 600);
   }
 
 }

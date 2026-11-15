@@ -23,6 +23,10 @@ import { recordOutcome } from './progress.js';
 import { showMessage } from '../ui/message_overlay.js';
 import { t } from '../i18n/index.js';
 
+import { AchievementManager } from './achievements.js';
+import { createAchievementBanner } from '../ui/achievement_banner.js';
+import { addTotalEpaulettes } from './progress.js';
+
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const Z_HAND_BASE  = 100;
 const Z_TABLE_BASE = 200;
@@ -1177,6 +1181,12 @@ else                           this._jokerFrame('five');  // ничья
 
     if (points > 0) addStylePoints(points);
     recordOutcome(winner, GameSettings.aiLevel);
+	
+	    // ---- Достижения ----
+    if (epaulettes > 0 && winner === 'player') {
+      addTotalEpaulettes(epaulettes);
+    }
+    const newlyUnlocked = AchievementManager.check({ winner, epaulettes });
  
     // ---- Обновление жетона дурака ----
     const prevOwner = Progress.foolToken ? Progress.foolToken.owner : null;
@@ -1245,6 +1255,13 @@ else                           this._jokerFrame('five');  // ничья
       : '';
   }
 
+  // Баннер достижения — если открылось
+  let achBannerHTML = '';
+  let achBannerNode = null;
+  if (newlyUnlocked.length > 0) {
+    achBannerNode = createAchievementBanner(newlyUnlocked[0]);
+  }
+
   el.innerHTML = `<div class="game-over__box">
     ${jokerHTML}
     <div class="game-over__content">
@@ -1261,6 +1278,11 @@ else                           this._jokerFrame('five');  // ничья
 
   el.style.display = 'flex';
   document.getElementById('scene').appendChild(el);
+  
+  // Вставляем баннер абсолютным слоем сверху
+  if (achBannerNode) {
+    el.appendChild(achBannerNode);
+  }
 
   // ---- Клавиатурная / ТВ навигация в окне результатов ----
   // Порядок: реклама → ещё раз → в меню.

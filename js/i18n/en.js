@@ -342,4 +342,6 @@ export const EN = {
 
   'achieve.collector.title':  'Shopaholic',
   'achieve.collector.desc':   'Unlock all style items in the shop.',
+
+'achieve.unlocked': 'ACHIEVEMENT UNLOCKED',
 };

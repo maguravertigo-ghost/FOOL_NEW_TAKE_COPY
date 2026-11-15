@@ -19,6 +19,9 @@ function defaultState() {
 	trialUnlocked: false,
 	achievements: {},     // { [id]: { unlockedAt: timestamp } }
 	
+    pendingAchievements: [],   // ← ДОБАВИТЬ
+    totalEpaulettes: 0,        // ← ДОБАВИТЬ
+	
 	  // Счётчик подряд идущих побед/поражений на текущей сложности.
 	  // Сбрасывается при смене сложности или ничьей.
 	  streak: { level: 1, wins: 0, losses: 0 },
@@ -54,6 +57,9 @@ function load() {
 	  trialUnlocked: p.trialUnlocked ?? false,   // ← ДОБАВИТЬ
 	  streak:        p.streak || { level: 1, wins: 0, losses: 0 },   // ← ДОБАВИТЬ
 	  achievements: p.achievements || {},
+	  
+      pendingAchievements: p.pendingAchievements || [],   // ← ДОБАВИТЬ
+      totalEpaulettes: p.totalEpaulettes || 0,            // ← ДОБАВИТЬ
     };
   } catch { return defaultState(); }
 }
@@ -324,6 +330,10 @@ export function resetAll() {
   Progress.trialUnlocked = false;
   Progress.streak = { level: 1, wins: 0, losses: 0 };   // ← ДОБАВИТЬ
   Progress.achievements = {};
+  
+  Progress.pendingAchievements = [];
+  Progress.totalEpaulettes = 0;
+  
   saveProgress();
 }
 
@@ -400,4 +410,29 @@ export function unlockAchievement(id) {
 
 export function unlockedCount() {
   return Object.keys(Progress.achievements || {}).length;
+}
+
+export function setPendingAchievement(id) {
+  if (!Progress.pendingAchievements) Progress.pendingAchievements = [];
+  if (Progress.pendingAchievements.length > 0) return false; // уже есть один
+  Progress.pendingAchievements.push(id);
+  saveProgress();
+  return true;
+}
+
+export function popPendingAchievement() {
+  if (!Progress.pendingAchievements || !Progress.pendingAchievements.length) return null;
+  const id = Progress.pendingAchievements.shift();
+  saveProgress();
+  return id;
+}
+
+export function peekPendingAchievement() {
+  if (!Progress.pendingAchievements || !Progress.pendingAchievements.length) return null;
+  return Progress.pendingAchievements[0];
+}
+
+export function addTotalEpaulettes(n) {
+  Progress.totalEpaulettes = (Progress.totalEpaulettes || 0) + Math.max(0, n | 0);
+  saveProgress();
 }

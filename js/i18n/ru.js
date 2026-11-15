@@ -352,4 +352,6 @@ export const RU = {
 
   'achieve.collector.title':  'Шопоголик',
   'achieve.collector.desc':   'Откройте все элементы стиля в магазине.',
+
+'achieve.unlocked': 'ДОСТИЖЕНИЕ ОТКРЫТО',
 };
