@@ -3251,7 +3251,14 @@ body.is-mobile .mm-tab--active {
   height: 100%;
   object-fit: contain;
 }
-
+.mm-achieve-detail__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--ui));
+  min-height: 0;
+  overflow: hidden;
+}
 .mm-achieve-detail__content {
   flex: 1 1 auto;
   display: flex;
@@ -3287,22 +3294,24 @@ body.is-mobile .mm-tab--active {
   padding-top: calc(8px * var(--ui));
 }
 
-/* Мобилка — двухколоночный, картинка слева крупно */
+/* Мобилка: окно 85%, две колонки, текст по центру, кнопка с отступом */
 body.is-mobile .mm-achieve-detail {
-  width: calc(100% - calc(12px * var(--ui)));
-  height: calc(100% - calc(12px * var(--ui)));
-  max-height: calc(100% - calc(12px * var(--ui)));
-  padding: calc(12px * var(--ui));
+  width: 85%;
+  max-width: 85%;
+  max-height: 85%;
+  height: auto;
+  padding: calc(14px * var(--ui));
   flex-direction: row;
-  gap: calc(12px * var(--ui));
+  gap: calc(14px * var(--ui));
   box-sizing: border-box;
 }
 
 body.is-mobile .mm-achieve-detail__img-wrap {
   flex: 0 0 auto;
-  height: 100%;
+  width: 50%;
+  height: auto;
   aspect-ratio: 1 / 1;
-  max-width: 50%;
+  align-self: center;                       /* по центру по высоте */
   border-radius: calc(10px * var(--ui));
   overflow: hidden;
 }
@@ -3312,47 +3321,70 @@ body.is-mobile .mm-achieve-detail__content {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 0;                                   /* gap через body/footer */
+}
+
+/* Тело — центрируется по вертикали между top и footer */
+body.is-mobile .mm-achieve-detail__body {
+  margin: auto 0;                           /* ← центрирование */
+  padding: 0 calc(8px * var(--ui));         /* отступы слева/справа */
   gap: calc(8px * var(--ui));
 }
 
 body.is-mobile .mm-achieve-detail__title {
-  font-size: max(16px, calc(20px * var(--ui)));
-  line-height: 1.15;
+  font-size: max(16px, calc(19px * var(--ui)));
+  line-height: 1.2;
 }
 
 body.is-mobile .mm-achieve-detail__desc {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
   font-size: max(13px, calc(15px * var(--ui)));
-  line-height: 1.4;
+  line-height: 1.45;
+  overflow-y: auto;
+  max-height: 40vh;
 }
 
+/* Кнопка ОК — прижата внизу, но с отступом от края */
 body.is-mobile .mm-achieve-detail__footer {
   display: flex;
   justify-content: flex-end;
-  padding-top: calc(6px * var(--ui));
+  padding: calc(10px * var(--ui)) calc(10px * var(--ui)) 0 0;
+  margin-top: auto;
 }
 
 body.is-mobile .mm-achieve-detail__footer .mm-btn {
-  font-size: max(12px, calc(14px * var(--ui))) !important;
-  padding: max(6px, calc(8px * var(--ui))) max(12px, calc(18px * var(--ui))) !important;
+  font-size: max(13px, calc(15px * var(--ui))) !important;
+  padding: max(6px, calc(8px * var(--ui))) max(18px, calc(24px * var(--ui))) !important;
+  min-width: calc(100px * var(--ui));
 }
 
-/* --- Мобилка --- */
 body.is-mobile .mm-overlay__box--achievements {
-  width: calc(100% - calc(16px * var(--ui)));
-  max-width: none;
+  width: 90%;
+  max-width: 90%;
   max-height: calc(100% - calc(16px * var(--ui)));
-  padding: calc(16px * var(--ui));
+  padding: calc(14px * var(--ui));
   gap: calc(10px * var(--ui));
+  box-sizing: border-box;
 }
+
 body.is-mobile .mm-achieve-title {
-  font-size: max(20px, calc(26px * var(--ui)));
+  font-size: max(16px, calc(20px * var(--ui)));   /* было 20/26 — уменьшили */
+  gap: calc(8px * var(--ui));
 }
+
 body.is-mobile .mm-achieve-title__star {
-  width: max(22px, calc(28px * var(--ui)));
-  height: max(22px, calc(28px * var(--ui)));
+  width: max(18px, calc(22px * var(--ui)));       /* пропорционально */
+  height: max(18px, calc(22px * var(--ui)));
+}
+
+/* Кнопка "В МЕНЮ" — крупнее, по центру */
+body.is-mobile .mm-overlay__box--achievements > [data-close] {
+  align-self: center;
+  font-size: max(15px, calc(18px * var(--ui))) !important;
+  padding: max(8px, calc(10px * var(--ui))) max(28px, calc(36px * var(--ui))) !important;
+  min-width: calc(160px * var(--ui));
+  min-height: max(38px, calc(44px * var(--ui)));
+  height: auto;
+  margin-top: calc(4px * var(--ui));
 }
 body.is-mobile .mm-overlay__box--achievements {
   /* уже есть — но убедимся, что flex-цепочка держит сетку */

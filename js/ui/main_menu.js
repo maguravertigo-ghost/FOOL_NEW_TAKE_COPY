@@ -3164,9 +3164,11 @@ if (claimed) {
           <img src="${src}" alt="" onerror="this.src='${ASSETS.starIcon}'">
         </div>
         <div class="mm-achieve-detail__content">
-          <div class="mm-achieve-detail__title">${title}</div>
-          <div class="mm-achieve-detail__sep"></div>
-          <div class="mm-achieve-detail__desc">${desc}</div>
+          <div class="mm-achieve-detail__body">
+            <div class="mm-achieve-detail__title">${title}</div>
+            <div class="mm-achieve-detail__sep"></div>
+            <div class="mm-achieve-detail__desc">${desc}</div>
+          </div>
           <div class="mm-achieve-detail__footer">
             <button class="mm-btn mm-btn--small" data-close>${t('dialog.ok')}</button>
           </div>
