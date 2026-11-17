@@ -3300,9 +3300,10 @@ body.is-mobile .mm-achieve-detail {
   max-width: 85%;
   max-height: 85%;
   height: auto;
-  padding: calc(14px * var(--ui));
+  /* Отступ со всех сторон = 5% от ширины экрана */
+  padding: 5vw;
   flex-direction: row;
-  gap: calc(14px * var(--ui));
+  gap: 5vw;                 /* тот же принцип для gap между колонками */
   box-sizing: border-box;
 }
 
@@ -3326,8 +3327,7 @@ body.is-mobile .mm-achieve-detail__content {
 
 /* Тело — центрируется по вертикали между top и footer */
 body.is-mobile .mm-achieve-detail__body {
-  margin: auto 0;                           /* ← центрирование */
-  padding: 0 calc(8px * var(--ui));         /* отступы слева/справа */
+  margin: auto 0;
   gap: calc(8px * var(--ui));
 }
 
@@ -3347,7 +3347,6 @@ body.is-mobile .mm-achieve-detail__desc {
 body.is-mobile .mm-achieve-detail__footer {
   display: flex;
   justify-content: flex-end;
-  padding: calc(10px * var(--ui)) calc(10px * var(--ui)) 0 0;
   margin-top: auto;
 }
 
