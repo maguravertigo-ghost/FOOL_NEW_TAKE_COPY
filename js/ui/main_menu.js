@@ -711,11 +711,11 @@ _updateQuestBadge() {
     // Схематическая сетка 5×3: левые/правые кнопки по колонкам,
     // режимы по центру. «Подкидной» стоит на уровне «Об игре» и «Квеста».
     this._grid = [
-      ['lang',     null,       'help'],
-      ['auth',     null,       'achieve'],
+      ['fs',       null,       'help'],
+      ['lang',     null,       'achieve'],
       ['about',    'mode0',    'quest'],
       ['settings', 'mode1',   'style'],
-      ['fs',       null,       'shop'],
+      ['auth',     null,       'shop'],
     ];
     this._navPos = { r: 3, c: 1 }; // стартовый фокус — «Переводной»
     this._navEl = null;
@@ -1267,7 +1267,10 @@ _updateQuestBadge() {
 
     const tabs = [...ov.querySelectorAll('.mm-tab')];
     const tiles = [...ov.querySelectorAll('.mm-tile')];
-    const footer = [...ov.querySelectorAll('.mm-overlay__footer .mm-btn')];
+    // Недоступные действия (например, «Случайный» без нескольких вариантов)
+    // полностью исключаются из навигации, но остаются в разметке как disabled.
+    const footer = [...ov.querySelectorAll('.mm-overlay__footer .mm-btn')]
+      .filter(btn => !btn.disabled && !btn.hidden);
 
     const focusEl = (el) => focusElement(ov, el, { scroll: true });
 
@@ -1292,6 +1295,11 @@ _updateQuestBadge() {
         nav.level = 'tiles';
         nav.tileIdx = 0;
         focusEl(tiles[0]);
+      } else if (e.key === 'ArrowUp' && footer.length) {
+        // Варп с верхнего ряда табов в нижний ряд доступных действий.
+        nav.level = 'footer';
+        nav.footerIdx = footer.length - 1;
+        focusEl(footer[nav.footerIdx]);
       }
       return;
     }

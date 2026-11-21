@@ -1297,9 +1297,10 @@ else                           this._jokerFrame('five');  // ничья
 
   const goHighlight = (idx) => {
     this._gameOverButtons.forEach((b, i) =>
-      b.classList.toggle('kbd-focus', i === idx)
+      b.classList.toggle('kbd-focus', i === idx && !b.disabled)
     );
   };
+  this._gameOverHighlight = goHighlight;
 
   this._gameOverKeyHandler = (e) => {
     if (e.repeat) return;
@@ -1344,8 +1345,8 @@ else                           this._jokerFrame('five');  // ничья
   if (!uiScale.isMobile && window.__lastInputWasKeyboard) {
     setTimeout(() => {
       if (!document.getElementById('game-over')) return;
-      this._gameOverNavIdx = 0;
-      goHighlight(0);
+      this._gameOverNavIdx = this._gameOverButtons.findIndex(btn => !btn.disabled);
+      goHighlight(this._gameOverNavIdx);
     }, 100);
   }
 
@@ -1512,6 +1513,22 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
     });
 
     go.appendChild(bar);
+
+    // Обновить список клавиатурной навигации после добавления feedback-кнопки.
+    const wasFocused = this._gameOverButtons?.[this._gameOverNavIdx] || null;
+    this._gameOverButtons = [
+      go.querySelector('[data-action="ad"]'),
+      go.querySelector('[data-action="change-diff"]'),
+      go.querySelector('[data-action="replay"]'),
+      go.querySelector('[data-action="menu"]'),
+    ].filter(Boolean);
+    this._gameOverNavIdx = this._gameOverButtons.indexOf(wasFocused);
+    if (this._gameOverNavIdx < 0 && window.__lastInputWasKeyboard) {
+      this._gameOverNavIdx = this._gameOverButtons.findIndex(btn => !btn.disabled);
+    }
+    this._gameOverButtons.forEach((btn, i) => btn.classList.toggle(
+      'kbd-focus', i === this._gameOverNavIdx && !btn.disabled
+    ));
   }
 
   /**

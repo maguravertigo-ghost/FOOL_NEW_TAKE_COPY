@@ -1,5 +1,6 @@
 import { audio } from '../audio/audio_engine.js';
 import { t } from '../i18n/index.js';
+import { GameSettings, saveSettings } from '../game/settings.js';
 
 export class PauseOverlay {
   constructor({ onResume, onExit }) {
@@ -47,36 +48,60 @@ slider.addEventListener('input', () => {
   updateVisual();
 });
 slider.addEventListener('change', () => {
-  import('../game/settings.js').then(m => {
-    m.GameSettings.masterVolume = Number(slider.value) / 100;
-    m.saveSettings();
-  });
+  GameSettings.masterVolume = Number(slider.value) / 100;
+  saveSettings();
 });
 
 // инициализируем визуал сразу
 updateVisual();
 this._updateSliderVisual = updateVisual;
 
-    // Клавиатурная / ТВ навигация по кнопкам паузы
-    this._navBtns = [];
-    this._navIdx = -1;
+    // TV-навигация: Продолжить ↔ громкость ↔ В меню.
+    this._navTarget = null;
+    this._applyNavFocus = () => {
+      this.el.querySelectorAll('.kbd-focus').forEach(node => node.classList.remove('kbd-focus'));
+      if (this._navTarget === 'resume') this.el.querySelector('[data-action="resume"]')?.classList.add('kbd-focus');
+      if (this._navTarget === 'volume') slider.classList.add('kbd-focus');
+      if (this._navTarget === 'exit') this.el.querySelector('[data-action="exit"]')?.classList.add('kbd-focus');
+    };
+
+    this.el.addEventListener('pointerdown', () => {
+      this._navTarget = null;
+      this._applyNavFocus();
+    });
 
     window.addEventListener('keydown', (e) => {
-      if (this.el.style.display === 'none') return;
-      if (e.repeat) return;
-      if (!['ArrowUp', 'ArrowDown', 'Enter', ' '].includes(e.key)) return;
+      if (this.el.style.display === 'none' || e.repeat) return;
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) return;
       e.preventDefault();
 
-      this._navBtns = [...this.el.querySelectorAll('.pause-btn')];
-      if (!this._navBtns.length) return;
+      if (!this._navTarget) {
+        this._navTarget = 'resume';
+        this._applyNavFocus();
+        if (e.key.startsWith('Arrow')) return;
+      }
 
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        const dir = e.key === 'ArrowDown' ? 1 : -1;
-        this._navIdx = (this._navIdx + dir + this._navBtns.length) % this._navBtns.length;
-        this._navBtns.forEach((b, i) => b.classList.toggle('kbd-focus', i === this._navIdx));
-      } else if (this._navIdx >= 0) {
-        audio.playSfx('button_click');
-        this._navBtns[this._navIdx].click();
+      if (this._navTarget === 'volume' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        const next = Math.max(0, Math.min(100, Number(slider.value) + (e.key === 'ArrowRight' ? 5 : -5)));
+        slider.value = String(next);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        slider.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        const up = e.key === 'ArrowUp';
+        if (this._navTarget === 'resume') this._navTarget = up ? 'volume' : 'exit';
+        else if (this._navTarget === 'volume') this._navTarget = up ? 'resume' : 'exit';
+        else this._navTarget = up ? 'resume' : 'exit';
+        this._applyNavFocus();
+        return;
+      }
+
+      if ((e.key === 'Enter' || e.key === ' ') && this._navTarget !== 'volume') {
+        const btn = this.el.querySelector(this._navTarget === 'resume'
+          ? '[data-action="resume"]' : '[data-action="exit"]');
+        if (btn) { audio.playSfx('button_click'); btn.click(); }
       }
     });
 
@@ -91,21 +116,14 @@ show() {
   }
   this.el.style.display = 'flex';
 
-  // Автофокус только если играли с клавиатуры
-  if (window.__lastInputWasKeyboard) {
-    this._navBtns = [...this.el.querySelectorAll('.pause-btn')];
-    this._navIdx = 0;
-    this._navBtns.forEach((b, i) => b.classList.toggle('kbd-focus', i === 0));
-  } else {
-    this._navIdx = -1;
-    this._navBtns = [...this.el.querySelectorAll('.pause-btn')];
-    this._navBtns.forEach(b => b.classList.remove('kbd-focus'));
-  }
+  // При входе с клавиатуры курсор сразу на «Продолжить».
+  this._navTarget = window.__lastInputWasKeyboard ? 'resume' : null;
+  this._applyNavFocus();
 }
   hide() {
     this.el.style.display = 'none';
-    this._navIdx = -1;
-    this._navBtns.forEach(b => b.classList.remove('kbd-focus'));
+    this._navTarget = null;
+    this._applyNavFocus();
   }
   isVisible() { return this.el.style.display !== 'none'; }
 }

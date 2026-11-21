@@ -29,7 +29,7 @@ function defaultState() {
     // какие индексы элементов куплены
 	purchases: {
 	  shirt:  [0],
-	  design: [0],
+	  design: [0, 3],
 	  suits:  [0, 3],   // default и gradient открыты
 	  table:  [0],
 	  decor:  [],
@@ -313,7 +313,7 @@ export function resetAll() {
 
   Progress.purchases = {
     shirt:  [0],
-    design: [0],
+    design: [0, 3],
     suits:  [0, 3],
     table:  [0],
     decor:  [],

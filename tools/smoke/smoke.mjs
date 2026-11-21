@@ -99,7 +99,7 @@ const step = async (name, fn) => {
 window.localStorage.setItem('fool_progress', JSON.stringify({
   stylePoints: 120, stats:{games:2,wins:1,losses:1,draws:0},
   foolToken:{ owner:'player' }, giftGiven:true, shopIntroSeen:true, trialUnlocked:true,
-  purchases:{shirt:[0],design:[0],suits:[0,3],table:[0],decor:[]},
+  purchases:{shirt:[0],design:[0,3],suits:[0,3],table:[0],decor:[]},
   achievements:{}, seenStyleItems:{}, quests:{}, tempItems:null,
 }));
 // app.js вешает слушатель DOMContentLoaded; в jsdom событие может прийти
@@ -121,6 +121,16 @@ await step('DOMContentLoaded -> App', async () => {
   if (!window.__app) throw new Error('App не создан');
 });
 const app = window.__app;
+const { GameSettings: defaultsUnderTest } = await import('file://' + path.join(ROOT, 'js/game/settings.js'));
+await step('first-run settings match requested defaults', async () => {
+  const actual = [defaultsUnderTest.sfxEnabled, defaultsUnderTest.musicEnabled,
+    defaultsUnderTest.deckSize, defaultsUnderTest.handLayout, defaultsUnderTest.moveHints,
+    defaultsUnderTest.showDeckCounter, defaultsUnderTest.aiLevel, defaultsUnderTest.shirtStyle,
+    defaultsUnderTest.cardStyle, defaultsUnderTest.suitStyle, defaultsUnderTest.tableStyle,
+    defaultsUnderTest.decorStyle];
+  const expected = [true, true, 36, 'fan', true, true, 1, 0, 'wide-grid', 'default', 0, -1];
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`неожиданные defaults: ${JSON.stringify(actual)}`);
+});
 console.log('app создан:', !!app, '| меню в DOM:', !!document.querySelector('#main-menu, .mm-root, .menu'));
 
 const q = (s) => document.querySelector(s);
@@ -235,6 +245,24 @@ await step('обучение: верх/низ меняют цель фокуса
   app.menu._closeOverlay();
 });
 
+await step('стиль: варп табов вниз и пропуск недоступного Random', async () => {
+  const opener = document.querySelector('[data-open="style"]');
+  opener.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  opener.click();
+  await new Promise(r => setTimeout(r, 80));
+  const random = document.querySelector('[data-random]');
+  if (!random) throw new Error('нет кнопки Random');
+  random.disabled = true; // имитируем уже недоступную кнопку
+  press('ArrowUp');
+  if (!document.querySelector('.mm-overlay__footer [data-close].kbd-focus')) throw new Error('↑ с табов должен варпать к нижней кнопке');
+  press('ArrowLeft');
+  if (!document.querySelector('.mm-overlay__footer [data-preview].kbd-focus')) throw new Error('недоступный Random должен пропускаться');
+  if (random.classList.contains('kbd-focus')) throw new Error('фокус попал на disabled Random');
+  press('ArrowDown');
+  if (!document.querySelector('.mm-tab--active.kbd-focus')) throw new Error('↓ с футера должен возвращать на табы');
+  app.menu._closeOverlay();
+});
+
 await step('режим ввода: мышь скрывает, клавиатура показывает фокус', async () => {
   const btn = document.querySelector('[data-open="help"]');
   btn.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
@@ -258,7 +286,21 @@ await step('старт матча (подкидной)', async () => {
 });
 console.log('карт в DOM:', document.querySelectorAll('.card').length, '| узлов всего:', document.querySelectorAll('*').length);
 
-await step('открыть паузу в матче', async () => { app._openPause(); await new Promise(r => setTimeout(r, 100)); });
+await step('пауза: фокус Продолжить → громкость → В меню', async () => {
+  app._openPause();
+  await new Promise(r => setTimeout(r, 100));
+  const slider = document.querySelector('#pause-volume-slider');
+  if (!document.querySelector('#pause-overlay [data-action="resume"].kbd-focus')) throw new Error('автофокус паузы не на Продолжить');
+  const before = Number(slider.value);
+  press('ArrowUp');
+  if (!slider.classList.contains('kbd-focus')) throw new Error('↑ с Продолжить должен переводить на громкость');
+  press('ArrowRight');
+  if (Number(slider.value) !== Math.min(100, before + 5)) throw new Error('←/→ не меняют громкость');
+  press('ArrowDown');
+  if (!document.querySelector('#pause-overlay [data-action="exit"].kbd-focus')) throw new Error('↓ с громкости должен вести в меню');
+  press('ArrowUp');
+  if (!document.querySelector('#pause-overlay [data-action="resume"].kbd-focus')) throw new Error('↑ с выхода должен возвращать на Продолжить');
+});
 await step('закрыть паузу', async () => { app._closePause(); await new Promise(r => setTimeout(r, 100)); });
 await step('выход в меню', async () => { await app._exitToMenu(); await new Promise(r => setTimeout(r, 400)); });
 

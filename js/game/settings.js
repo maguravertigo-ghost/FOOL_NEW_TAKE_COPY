@@ -6,14 +6,14 @@ export const DEFAULT_SETTINGS = {
   masterVolume:  0.8,      // ← добавь
   deckSize:      36,
   handLayout:    'fan',
-  cardStyle:     'grid',
-  suitStyle:     'gradient',
+  cardStyle:     'wide-grid',
+  suitStyle:     'default',
   shirtStyle:    0,
   tableStyle:    0,
   decorStyle:    -1,
   moveHints: true,   // показывать красные блоки на нелегальных картах
-  showDeckCounter: false,   // счётчик карт на колоде
-  aiLevel: 2,               // 1 = новичок, 2 = обычный, 3 = эксперт
+  showDeckCounter: true,   // счётчик карт на колоде
+  aiLevel: 1,               // 1 = новичок, 2 = обычный, 3 = эксперт
 };
 
 function load() {
