@@ -26,3 +26,6 @@ compress_APP.bat
 
 # dev tooling
 node_modules/
+
+# yandex archive builds
+yandex_zip/
