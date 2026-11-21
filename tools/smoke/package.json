@@ -1,0 +1,11 @@
+{
+  "name": "fool-smoke",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

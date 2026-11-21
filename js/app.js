@@ -663,18 +663,6 @@ async _startGameFromMenu(mode) {
   }
 }
 
-  /**
-   * Кто делает первый ход в предстоящем матче.
-   *   • Жетона нет → 'player' (временно; Этап 5 заменит на CoinToss)
-   *   • Жетон у игрока → первым ходит CPU (non-fool)
-   *   • Жетон у CPU    → первым ходит игрок
-   */
-  _resolveFirstMove() {
-    const token = Progress.foolToken;
-    if (!token) return 'player';   // TODO Этап 5: заменить на CoinToss
-    return token.owner === 'player' ? 'cpu' : 'player';
-  }
-
   async _playAgain(mode) {
     const m = mode || this._lastMode || 'perevodnoy';
     const go = document.getElementById('game-over');
@@ -695,18 +683,6 @@ async _startGameFromMenu(mode) {
     // 2. _startGameFromMenu дополнительно сделает toBlack (no-op, уже чёрный)
     //    и затем fade.toClear — покажет новый матч с актуальным стилем
     return this._startGameFromMenu(m);
-  }
-
-  _startGame(mode) {
-	const firstMove = this._resolveFirstMove();
-    this.session = new GameSession(this, {
-      skipAnimation: this.tuner.skipAnimation,
-      translateMode: mode === 'perevodnoy',
-	  firstMove,
-    });
-    this.session.start().then(() => {
-      this._sessionReady = true;
-    });
   }
 
   async _exitToMenu() {

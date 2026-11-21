@@ -1,7 +1,7 @@
 /* ==================================================================
-   Card Constructor С стили изолированы внутри .card__face
-   ‚се селекторы начинаютсЯ с .card__face, чтобы не конфликтовать
-   с нашей обЮрткой .card (position, transform, z-index).
+   Card Constructor вЂ” СЃС‚РёР»Рё РёР·РѕР»РёСЂРѕРІР°РЅС‹ РІРЅСѓС‚СЂРё .card__face
+   Р’СЃРµ СЃРµР»РµРєС‚РѕСЂС‹ РЅР°С‡РёРЅР°СЋС‚СЃСЏ СЃ .card__face, С‡С‚РѕР±С‹ РЅРµ РєРѕРЅС„Р»РёРєС‚РѕРІР°С‚СЊ
+   СЃ РЅР°С€РµР№ РѕР±С‘СЂС‚РєРѕР№ .card (position, transform, z-index).
    ================================================================== */
 
 .card__face {
@@ -31,7 +31,7 @@
 .card__face .card__shadow { z-index: 0; }
 .card__face .card__body   { z-index: 1; }
 
-/* ‚нутреннЯЯ сетка */
+/* Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ СЃРµС‚РєР° */
 .card__face .card__grid {
   position: absolute;
   left: 0; top: 0;
@@ -40,7 +40,7 @@
 }
 .card__face .card--show-grid .card__grid { z-index: 100; }
 
-/* ---------- пипс ---------- */
+/* ---------- РїРёРїСЃ ---------- */
 .card__face .pip {
   position: absolute;
   display: flex; align-items: center; justify-content: center;
@@ -51,7 +51,7 @@
   display: block; pointer-events: none;
 }
 
-/* ---------- портреты ---------- */
+/* ---------- РїРѕСЂС‚СЂРµС‚С‹ ---------- */
 .card__face .face {
   position: absolute;
   display: flex; align-items: center; justify-content: center;
@@ -60,7 +60,7 @@
 .card__face .face--bottom { transform: rotate(180deg); }
 .card__face .face__img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-/* ---------- углы ---------- */
+/* ---------- СѓРіР»С‹ ---------- */
 .card__face .card__corner-layer {
   position: absolute; inset: 0;
   pointer-events: none; z-index: 3;
@@ -73,7 +73,7 @@
   pointer-events: none;
 }
 
-/* “гловой ранг */
+/* РЈРіР»РѕРІРѕР№ СЂР°РЅРі */
 .card__face .corner__rank-img {
   position: absolute;
   left:   calc(var(--cx, 12) * var(--u));
@@ -92,7 +92,7 @@
   mask-repeat:   no-repeat;
 }
 
-/* “гловаЯ масть */
+/* РЈРіР»РѕРІР°СЏ РјР°СЃС‚СЊ */
 .card__face .corner__suit-img {
   position: absolute;
   left:   calc(var(--sx, 15.49) * var(--u));
@@ -103,7 +103,7 @@
   object-fit: contain;
 }
 
-/* ---------- центр (rank) ---------- */
+/* ---------- С†РµРЅС‚СЂ (rank) ---------- */
 .card__face .center-rank__rank,
 .card__face .center-rank__suit {
   position: absolute;
@@ -130,7 +130,7 @@
   display: block;
 }
 
-/* ---------- дебаг-сетка ---------- */
+/* ---------- РґРµР±Р°Рі-СЃРµС‚РєР° ---------- */
 .card__face .grid-overlay {
   position: absolute; inset: 0;
   pointer-events: none;
@@ -147,14 +147,14 @@
 .card__face .grid-overlay__cx { top: 0; bottom: 0; width: 1px; }
 .card__face .grid-overlay__cy { left: 0; right: 0; height: 1px; }
 
-/* ---------- масти J/Q/K поверх углов ---------- */
+/* ---------- РјР°СЃС‚Рё J/Q/K РїРѕРІРµСЂС… СѓРіР»РѕРІ ---------- */
 .card__face .card__court-pips {
   position: absolute; inset: 0;
   pointer-events: none;
   z-index: 4;
 }
 /* ================================================================
-   “‚…‹€—…ЌЌ›… “ѓ‹› „‹џ 4-ѓЋ ‘’€‹џ (ЉрупнаЯ масть)
+   РЈРІРµР»РёС‡РµРЅРЅС‹Рµ СѓРіР»С‹ РґР»СЏ 4-РіРѕ СЂР°РЅРіР° (РєСЂСѓРїРЅР°СЏ РјР°СЃС‚СЊ)
    ================================================================ */
 
 
@@ -167,20 +167,20 @@
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
 }
-/* Љонтейнер рубашки */
+/* РљРѕРЅС‚РµР№РЅРµСЂ СЂСѓР±Р°С€РєРё */
 .card__shirt {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  /* Њы не ставим overflow: hidden, так как SVG-подложка сама задаЮт форму */
+  /* РњС‹ РЅРµ СЃС‚Р°РІРёРј overflow: hidden, С‚Р°Рє РєР°Рє SVG-РїРѕРґР»РѕР¶РєР° СЃР°РјР° Р·Р°РґР°С‘С‚ С„РѕСЂРјСѓ */
 }
 
-/* Џаттерн рубашки С ЏЋ‚…ђ• SVG-подложки. Ћтступы из макета
-   (220.007 ? 340.151 ? WebP 197 ? 318): по X 5.229 %, по Y 3.256 %.
-   width/height обЯзательны (replaced element). “глы в WebP уже
-   обрезаны С border-radius и box-shadow не нужны. */
+/* РџР°С‚С‚РµСЂРЅ СЂСѓР±Р°С€РєРё вЂ” РџРћР’Р•Р РҐ SVG-РїРѕРґР»РѕР¶РєРё. РћС‚СЃС‚СѓРїС‹ РёР· РјР°РєРµС‚Р°
+   (220.007 Г— 340.151 в†’ WebP 197 Г— 318): РїРѕ X 5.229 %, РїРѕ Y 3.256 %.
+   width/height РѕР±СЏР·Р°С‚РµР»СЊРЅС‹ (replaced element). РЈРіР»С‹ РІ WebP СѓР¶Рµ
+   РѕР±СЂРµР·Р°РЅС‹ вЂ” border-radius Рё box-shadow РЅРµ РЅСѓР¶РЅС‹. */
 .card__shirt-img {
   position: absolute;
   top: 3.256%;

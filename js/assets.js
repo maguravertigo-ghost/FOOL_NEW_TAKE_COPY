@@ -193,12 +193,16 @@ const ACHIEVEMENT_ICONS = {
 
 const SVG_CACHE = new Map();
 
+/**
+ * URL-ы, которые реально нужны как инлайн-SVG (через svgInstance).
+ * Ранги (ranks / ranks_wide) сюда НЕ входят: конструктор карт вставляет
+ * их обычными <img>, а fetch с последующим parse только дублировал
+ * загрузку и обходил кэш браузера. Масти нужны для иконки козыря.
+ */
 function collectUrls() {
   return [
     ASSETS.body, ASSETS.shadow, ASSETS.overlay,
     ASSETS.settingsIcon,
-    ...Object.values(ASSETS.ranks),
-	...Object.values(ASSETS.ranks_wide), // <-- ДОБАВИТЬ
     ...Object.values(ASSETS.suits),
   ];
 }
@@ -213,7 +217,9 @@ export async function preloadSvgs() {
   const urls = collectUrls();
 
   const results = await Promise.allSettled(urls.map(async (url) => {
-    const res = await fetch(url, { cache: 'no-store' });
+    // Кэш браузера не отключаем: файлы статичные, повторный запуск
+    // должен брать их из кэша, а не качать заново.
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 
     let txt = await res.text();
@@ -244,115 +250,6 @@ export async function preloadSvgs() {
   });
 
   return results;
-}
-
-// Не блокирует boot, грузится в фоне
-export function preloadShirts() {
-  return Promise.all(ASSETS.shirts.map(url => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      // decode() гарантирует, что браузер уже готов РИСОВАТЬ,
-      // а не только «загрузил файл» — без этого первая карта в матче
-      // показывает SVG-подложку, а WebP подъезжает на следующем кадре.
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = url;
-  })));
-}
-
-export function preloadFaces() {
-  const faces = [];
-  for (const r of ['J','Q','K']) {
-    for (const s of ['clubs','diamonds','hearts','spades']) {
-      faces.push(`${BASE}/card_body/family/${r}_${s}.webp`);
-    }
-  }
-  return Promise.all(faces.map(url => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = url;
-  })));
-}
-
-export function preloadSuits() {
-  const urls = [];
-  for (const st of ['paper', 'barhat', 'gradient', 'ruby', 'golden']) {
-    for (const s of ['clubs', 'diamonds', 'hearts', 'spades']) {
-      urls.push(`${BASE}/card_body/suits/${st}/${s}.webp`);
-    }
-  }
-  return Promise.all(urls.map(url => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = url;
-  })));
-}
-
-export function preloadDecorations() {
-  return Promise.all(ASSETS.decorations.map(url => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = url;
-  })));
-}
-
-export function preloadJokers() {
-  const urls = [
-    ASSETS.foolToken, ASSETS.jokerFaceSmiling,
-    ASSETS.jokerSuit,
-    ASSETS.jokerWin, ASSETS.jokerLose, ASSETS.jokerDraw,
-    ASSETS.jokerShop,
-    ASSETS.jokerLies,
-    ASSETS.jokerSetOk, ASSETS.jokerSetNice,
-    ASSETS.jokerSetFive, ASSETS.jokerSetSad,
-  ];
-  return Promise.all(urls.map(url => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = url;
-  })));
-}
-
-export function preloadCoin() {
-  return Promise.all(ASSETS.coinFrames.map(url => new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = url;
-  })));
-}
-
-export function preloadFoolToken() {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      if (img.decode) img.decode().then(resolve).catch(resolve);
-      else resolve();
-    };
-    img.onerror = resolve;
-    img.src = ASSETS.foolToken;
-  });
 }
 
 /** Получить клон инлайн-SVG для заданного url (или null, если не загрузилось) */

@@ -23,3 +23,6 @@ CREDITS/
 
 # compressor~
 compress_APP.bat
+
+# dev tooling
+node_modules/
