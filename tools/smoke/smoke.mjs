@@ -215,6 +215,26 @@ await step('сетка меню: Об игре → вниз → Настройк
   if (!document.querySelector('[data-open="settings"].kbd-focus')) throw new Error('↓ с «Об игре» должен вести в «Настройки»');
 });
 
+await step('обучение: верх/низ меняют цель фокуса предсказуемо', async () => {
+  app.menu._openOverlay('help');
+  await new Promise(r => setTimeout(r, 80));
+  document.querySelector('[data-tutorial-btn]').click();
+  await new Promise(r => setTimeout(r, 80));
+  if (!document.querySelector('.tutorial-overlay [data-action="next"].kbd-focus')) {
+    throw new Error('обучение должно начинаться с кнопки «Вперёд»');
+  }
+  press('ArrowUp');
+  if (!document.querySelector('.tutorial-overlay [data-action="skip"].kbd-focus')) throw new Error('↑ должен вести на «Пропустить»');
+  press('ArrowDown');
+  if (!document.querySelector('.tutorial-overlay [data-action="next"].kbd-focus')) throw new Error('↓ должен возвращать на «Вперёд»');
+  press('Enter');
+  if (document.querySelector('.tutorial__counter')?.textContent !== '2 / 8') throw new Error('Enter на «Вперёд» не переключил слайд');
+  document.querySelector('.tutorial-overlay [data-action="skip"]').click();
+  await new Promise(r => setTimeout(r, 60));
+  if (!document.querySelector('[data-tutorial-btn].kbd-focus')) throw new Error('после обучения фокус не вернулся на кнопку запуска');
+  app.menu._closeOverlay();
+});
+
 await step('режим ввода: мышь скрывает, клавиатура показывает фокус', async () => {
   const btn = document.querySelector('[data-open="help"]');
   btn.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
