@@ -181,6 +181,15 @@ for (const [name, key] of navCases) {
   });
 }
 
+await step('вход в режим курсора ставит фокус на «Переводной»', async () => {
+  const button = document.querySelector('[data-mode="perevodnoy"]');
+  button.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  press('ArrowUp');
+  if (!button.classList.contains('kbd-focus')) throw new Error('первый курсор не на «Переводной»');
+  press('ArrowUp');
+  if (!document.querySelector('[data-mode="podkidnoy"].kbd-focus')) throw new Error('↑ не перешёл к «Подкидному»');
+});
+
 await step('режим ввода: мышь скрывает, клавиатура показывает фокус', async () => {
   const btn = document.querySelector('[data-open="help"]');
   btn.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));

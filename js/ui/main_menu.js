@@ -42,6 +42,7 @@ const LANG_FLAGS_SVG = {
   tr: 'assets/flags/tr.svg',
 };
 const LANG_FLAGS_EMOJI = { ru: '🇷🇺', en: '🇬🇧', tr: '🇹🇷' };
+const APP_TEST_VERSION = 'v0.3.0-test.1';
 
 // Возвращает HTML-строку с <img> (с onerror → эмодзи через замену на текст)
 const langFlagHTML = (code) => {
@@ -90,6 +91,7 @@ export class MainMenu {
     <button class="mm-btn mm-btn--mode" data-mode="perevodnoy"></button>
   </div>
   <div class="mm-author">${t('menu.author')}</div>
+  <div class="mm-version" aria-label="Версия игры">${APP_TEST_VERSION}</div>
 </div>
 
 	<!-- ЛЕВЫЙ НИЗ: снизу вверх — НАСТРОЙКИ, ОБ ИГРЕ -->
@@ -269,6 +271,7 @@ _cacheRefs() {
     btn0:     this.el.querySelector('[data-mode="podkidnoy"]'),
     btn1:     this.el.querySelector('[data-mode="perevodnoy"]'),
     author:   this.el.querySelector('.mm-author'),
+    version:  this.el.querySelector('.mm-version'),
     stats:    this.el.querySelector('.mm-top-left .mm-stat-block'),
     stylePts: this.el.querySelector('.mm-top-right .mm-style-points'),
     helpBtn:  this.el.querySelector('.mm-top-right [data-open="help"]'),
@@ -327,6 +330,18 @@ _layoutAll() {
     height: au.height + 'px',
     lineHeight: au.height + 'px',
     fontSize: H.s(14) + 'px',
+  });
+  Object.assign(this.refs.version.style, {
+    position: 'absolute',
+    left: 'calc(50% + ' + H.s(54) + 'px)',
+    top: au.top + 'px',
+    height: au.height + 'px',
+    lineHeight: au.height + 'px',
+    fontSize: H.s(12) + 'px',
+    opacity: '0.8',
+    color: '#ddd',
+    textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+    whiteSpace: 'nowrap',
   });
 
   // --- Статистика (левый верх) ---
@@ -693,14 +708,16 @@ _updateQuestBadge() {
 
   _setupKeyboardNav() {
     // ---- Сетка 3×4 (сверху вниз, слева направо). null = пустая ячейка ----
+    // Схематическая сетка 5×3: левые/правые кнопки по колонкам,
+    // режимы по центру. «Подкидной» стоит на уровне «Об игре» и «Квеста».
     this._grid = [
-      ['auth',     'fs',         null,       'help'],
-      ['lang',     null,         null,       'achieve'],
-      [null,       'mode0',      'quest',    null],
-      ['about',    'mode1',      'style',    null],
-      ['settings', null,         'shop',     null],
+      ['lang',     null,       'help'],
+      ['settings', null,       'achieve'],
+      ['about',    'mode0',    'quest'],
+      ['auth',     'mode1',    'style'],
+      ['fs',       null,       'shop'],
     ];
-    this._navPos = { r: 0, c: 1 }; // fullscreen; auth может быть скрыта
+    this._navPos = { r: 3, c: 1 }; // стартовый фокус — «Переводной»
     this._navEl = null;
     this._lastInputWasKeyboard = false;
     this._navReturnPos = null;
@@ -872,6 +889,19 @@ _updateQuestBadge() {
       }
 
       if (document.getElementById('game-over')) return;
+
+      const isNavKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key);
+      if (isNavKey && !this._lastInputWasKeyboard) {
+        // Первый ввод с клавиатуры только включает режим курсора.
+        // Точка входа — кнопка «Переводной», не произвольная боковая кнопка.
+        this._lastInputWasKeyboard = true;
+        this._navPos = { r: 3, c: 1 };
+        focusCurrent();
+        if (e.key.startsWith('Arrow')) {
+          e.preventDefault();
+          return;
+        }
+      }
 
       switch (e.key) {
         case 'ArrowUp':
