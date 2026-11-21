@@ -163,15 +163,28 @@ for (const [name, key] of navCases) {
     await new Promise(r => setTimeout(r, 40));
     const first = focused();
     if (!first) throw new Error('фокус не появился после стрелки');
+    if (name === 'help' && first !== document.querySelector('[data-help-up]')) {
+      throw new Error('первый шаг в справке должен быть «прокрутка вверх»');
+    }
 
     press(key);
     await new Promise(r => setTimeout(r, 40));
     if (!focused()) throw new Error('фокус потерян после второй стрелки');
+    if (name === 'help' && focused() !== document.querySelector('[data-help-down]')) {
+      throw new Error('второй шаг в справке должен быть «прокрутка вниз»');
+    }
 
     // Enter не жмём на выборе языка: там location.reload(), jsdom такое не умеет
     if (name !== 'lang') {
       press('Enter');
       await new Promise(r => setTimeout(r, 80));
+      if (name === 'achieve' && document.querySelector('.msg-overlay')) {
+        const ok = document.querySelector('.msg-overlay [data-close]');
+        if (!ok?.classList.contains('kbd-focus')) throw new Error('на деталях достижения фокус не на ОК');
+        press('Enter');
+        await new Promise(r => setTimeout(r, 40));
+        if (!focused()?.classList.contains('mm-achievement')) throw new Error('не восстановлен фокус на плитке достижения');
+      }
     }
 
     // приводим состояние в порядок: закрываем всё, что открылось
@@ -188,6 +201,18 @@ await step('вход в режим курсора ставит фокус на �
   if (!button.classList.contains('kbd-focus')) throw new Error('первый курсор не на «Переводной»');
   press('ArrowUp');
   if (!document.querySelector('[data-mode="podkidnoy"].kbd-focus')) throw new Error('↑ не перешёл к «Подкидному»');
+});
+
+await step('сетка меню: Об игре → вниз → Настройки', async () => {
+  const defaultBtn = document.querySelector('[data-mode="perevodnoy"]');
+  defaultBtn.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  press('ArrowUp'); // вход в режим клавиатуры — «Переводной»
+  press('ArrowUp'); // «Подкидной»
+  if (!document.querySelector('[data-mode="podkidnoy"].kbd-focus')) throw new Error('↑ не попал на «Подкидной»');
+  press('ArrowLeft'); // «Об игре»
+  if (!document.querySelector('[data-open="about"].kbd-focus')) throw new Error('← не попал на «Об игре»');
+  press('ArrowDown'); // «Настройки» после перестановки с «Войти»
+  if (!document.querySelector('[data-open="settings"].kbd-focus')) throw new Error('↓ с «Об игре» должен вести в «Настройки»');
 });
 
 await step('режим ввода: мышь скрывает, клавиатура показывает фокус', async () => {

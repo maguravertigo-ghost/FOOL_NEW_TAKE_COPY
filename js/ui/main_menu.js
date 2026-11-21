@@ -707,14 +707,14 @@ _updateQuestBadge() {
   }
 
   _setupKeyboardNav() {
-    // ---- Сетка 3×4 (сверху вниз, слева направо). null = пустая ячейка ----
+    // ---- Сетка 5×3 (сверху вниз, слева направо). null = пустая ячейка ----
     // Схематическая сетка 5×3: левые/правые кнопки по колонкам,
     // режимы по центру. «Подкидной» стоит на уровне «Об игре» и «Квеста».
     this._grid = [
       ['lang',     null,       'help'],
-      ['settings', null,       'achieve'],
+      ['auth',     null,       'achieve'],
       ['about',    'mode0',    'quest'],
-      ['auth',     'mode1',    'style'],
+      ['settings', 'mode1',   'style'],
       ['fs',       null,       'shop'],
     ];
     this._navPos = { r: 3, c: 1 }; // стартовый фокус — «Переводной»
@@ -1216,7 +1216,7 @@ _updateQuestBadge() {
     }
     ov.style.display = 'flex';
     this._activeOverlay = ov;
-    requestAnimationFrame(() => this._autoFocusOverlay(ov, '[data-close]'));
+    requestAnimationFrame(() => this._autoFocusOverlay(ov, '[data-tutorial-btn]'));
   }
 
   _navigateHelp(e) {
@@ -1226,23 +1226,20 @@ _updateQuestBadge() {
     this._lastInputWasKeyboard = true;
     e.preventDefault();
 
-    // ↑/↓ — прокрутка контента (без перемещения фокуса)
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      const body = ov.querySelector('.help-body');
-      if (body) body.scrollBy({ top: e.key === 'ArrowUp' ? -400 : 400, behavior: 'smooth' });
-      return;
-    }
-
-    // ←/→ и Enter — по кнопкам «вверх / вниз / туториал / в меню»
+    // Один последовательный список: туториал → прокрутка вверх → вниз → в меню.
+    // Любая стрелка двигает один шаг; прокрутка выполняется Enter на ↑/↓.
     const list = [
+      ov.querySelector('[data-tutorial-btn]'),
       ov.querySelector('[data-help-up]'),
       ov.querySelector('[data-help-down]'),
-      ov.querySelector('[data-tutorial-btn]'),
       ov.querySelector('[data-close]'),
     ].filter(Boolean);
     if (!list.length) return;
 
-    navigateLinear(ov, e, list, { initial: ov.querySelector('[data-close]') });
+    navigateLinear(ov, e, list, {
+      initial: ov.querySelector('[data-tutorial-btn]'),
+      scroll: true,
+    });
   }
 
   _focusStyleDefault() {
@@ -3032,6 +3029,9 @@ if (claimed) {
   }
 
   _showAchievementDetail(id, unlocked) {
+    const parentOverlay = this._activeOverlay;
+    const returnFocus = currentFocus(parentOverlay);
+    const returnWasKeyboard = window.__lastInputWasKeyboard === true;
     const title = t('achieve.' + id + '.title') || id;
     const desc  = unlocked
       ? t('achieve.' + id + '.desc')
@@ -3061,11 +3061,19 @@ if (claimed) {
       </div>`;
     document.getElementById('scene').appendChild(el);
 
+    const closeBtn = el.querySelector('[data-close]');
     const close = () => {
       audio.playSfx('tap_up');
       el.remove();
+      if (returnWasKeyboard && parentOverlay && parentOverlay.isConnected && returnFocus) {
+        focusElement(parentOverlay, returnFocus);
+      }
     };
-    el.querySelector('[data-close]').addEventListener('click', close);
+    closeBtn.addEventListener('click', close);
+    if (returnWasKeyboard) {
+      clearFocus(parentOverlay);
+      focusElement(el, closeBtn);
+    }
     el.addEventListener('click', (e) => { if (e.target === el) close(); });
   }
 
