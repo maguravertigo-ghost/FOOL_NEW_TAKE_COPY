@@ -30,6 +30,7 @@ import { CoinToss } from './ui/coin_toss.js';
 import { clearCache } from './game/card_cache.js';
 import { t } from './i18n/index.js';
 import { Tutorial } from './ui/tutorial.js';
+import { navigateLinear, focusableControls, isArrow, isActivate, clearFocus } from './ui/focus_nav.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -43,7 +44,7 @@ class App {
     document.addEventListener('pointerdown', () => {
       window.__lastInputWasKeyboard = false;
       // Глобально снимаем все фокусы при клике или тапе (на мобилке)
-      document.querySelectorAll('.kbd-focus').forEach(el => el.classList.remove('kbd-focus'));
+      clearFocus(document);
     }, true);
 
     // ---- запрет контекстного меню и выделения ----
@@ -252,38 +253,16 @@ class App {
   }
 
   _navigateMsgGlobal(e, el) {
-    const focusable = [];
-    el.querySelectorAll('input[type="checkbox"]').forEach(cb => focusable.push(cb));
-    el.querySelectorAll('button').forEach(b => focusable.push(b));
-    if (!focusable.length) return;
+    const list = focusableControls(el);
+    if (!list.length) return;
+    if (!isArrow(e) && !isActivate(e)) return;
 
-    if (!['Enter', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
     e.preventDefault();
     // Ключ обработан модалкой — не даём другим window-обработчикам
     // (например, _gameOverKeyHandler) среагировать на то же событие.
     e.stopImmediatePropagation();
 
-    let cur = el.querySelector('.kbd-focus');
-    if (!cur || !focusable.includes(cur)) {
-      focusable[0].classList.add('kbd-focus');
-      cur = focusable[0];
-    }
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      audio.playSfx('tap');
-      if (cur.tagName === 'INPUT' && cur.type === 'checkbox') {
-        cur.checked = !cur.checked;
-      } else {
-        cur.click();
-      }
-      return;
-    }
-
-    const dir = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
-    const curIdx = focusable.indexOf(cur);
-    const nextIdx = (curIdx + dir + focusable.length) % focusable.length;
-    focusable.forEach(x => x.classList.remove('kbd-focus'));
-    focusable[nextIdx].classList.add('kbd-focus');
+    navigateLinear(el, e, list);
   }
 
   /* ================================================================

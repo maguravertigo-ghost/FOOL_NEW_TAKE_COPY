@@ -2003,12 +2003,9 @@ switch (action.type) {
       return;
     }
     if (!this.selectedCard || !this.selectedSlots || !this.selectedSlots.length) return;
-    // Переход на слоты (или следующий слот)
-    if (this._slotFocusIdx < 0) {
-      this._slotFocusIdx = 0;
-    } else {
-      this._slotFocusIdx = (this._slotFocusIdx + 1) % this.selectedSlots.length;
-    }
+    // ↑ переводит руку на стол. Если фокус уже на столе, оставляем его
+    // на выбранном слоте: выбор соседнего слота выполняется ←/→.
+    if (this._slotFocusIdx < 0) this._slotFocusIdx = 0;
     this._updateSlotFocusUI();
   }
 

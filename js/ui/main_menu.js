@@ -21,6 +21,11 @@ import { HudLayout } from './hud_layout.js';
 import { uiScale } from './ui_scale.js';
 import { bus } from '../core/event_bus.js';
 import { attachTokenMark } from './fool_token_mark.js';
+import {
+  navigateLinear, navigateRows, focusElement, clearFocus, currentFocus,
+  ensureFocus, focusableControls, isArrow, isActivate, linearDir, gridColumns,
+  activateFocused,
+} from './focus_nav.js';
 
 import { t, getLang, getAvailableLangs } from '../i18n/index.js';
 import { Tutorial } from './tutorial.js';
@@ -654,7 +659,7 @@ _updateQuestBadge() {
     if (activeOv) {
       activeOv.style.display = 'none';
       // Снимаем фокус только внутри закрываемого оверлея
-      activeOv.querySelectorAll('.kbd-focus').forEach(e => e.classList.remove('kbd-focus'));
+      clearFocus(activeOv);
       this._activeOverlay = null;
     }
     this._overlayNavEl = null;
@@ -667,7 +672,7 @@ _updateQuestBadge() {
 
     if (pos && this._grid) {
       this._navPos = pos;
-      this.el.querySelectorAll('.kbd-focus').forEach(e => e.classList.remove('kbd-focus'));
+      clearFocus(this.el);
       this._navEl = this._navCellEl?.(this._grid[pos.r]?.[pos.c]) || null;
       if (this._navEl && wasKbd) this._navEl.classList.add('kbd-focus');
     }
@@ -688,14 +693,14 @@ _updateQuestBadge() {
 
   _setupKeyboardNav() {
     // ---- Сетка 3×4 (сверху вниз, слева направо). null = пустая ячейка ----
-	this._grid = [
-	  ['fs',       null,         'help'],
-	  ['lang',     null,         'achieve'],   // ← достижения
-	  [null,       'mode0',      'quest'],
-	  ['about',    'mode1',      'style'],
-	  ['settings', null,         'shop'],
-	];
-    this._navPos = { r: 0, c: 0 };
+    this._grid = [
+      ['auth',     'fs',         null,       'help'],
+      ['lang',     null,         null,       'achieve'],
+      [null,       'mode0',      'quest',    null],
+      ['about',    'mode1',      'style',    null],
+      ['settings', null,         'shop',     null],
+    ];
+    this._navPos = { r: 0, c: 1 }; // fullscreen; auth может быть скрыта
     this._navEl = null;
     this._lastInputWasKeyboard = false;
     this._navReturnPos = null;
@@ -704,6 +709,7 @@ _updateQuestBadge() {
     this._navCellEl = (id) => {
       if (!id) return null;
       switch (id) {
+        case 'auth':     return this.el.querySelector('[data-auth="login"]');
         case 'fs':       return this.el.querySelector('[data-fs-toggle]');
         case 'help':     return this.el.querySelector('[data-open="help"]');
         case 'quest':    return this.el.querySelector('[data-open="quest"]');
@@ -723,7 +729,11 @@ _updateQuestBadge() {
     const rows = this._grid.length;
     const cols = this._grid[0].length;
     const mod  = (n, m) => ((n % m) + m) % m;
-    const isEmpty = (r, c) => !this._grid[r] || !this._grid[r][c];
+    const isEmpty = (r, c) => {
+      const id = this._grid[r]?.[c];
+      const el = id && cellEl(id);
+      return !el || el.disabled || el.hidden || getComputedStyle(el).display === 'none';
+    };
 
     // Для ↑/↓: гравитация в направлении dy с wrap (зацикливаем).
     const findInColumnDir = (c, startRow, dy) => {
@@ -747,7 +757,7 @@ _updateQuestBadge() {
     };
 
     const focusCurrent = () => {
-      this.el.querySelectorAll('.kbd-focus').forEach(e => e.classList.remove('kbd-focus'));
+      clearFocus(this.el);
       if (!window.__lastInputWasKeyboard) return; // Фокус только от клавиатуры
       this._navEl = cellEl(this._grid[this._navPos.r]?.[this._navPos.c]);
       if (this._navEl) this._navEl.classList.add('kbd-focus');
@@ -834,6 +844,11 @@ _updateQuestBadge() {
           this._navigateSettings(e);
           return;
         }
+        // Достижения — 5×2 плитки + кнопка закрытия
+        if (this._activeOverlay.querySelector('.mm-achievements-grid')) {
+          this._navigateAchievements(e);
+          return;
+        }
         // Квест — сетка 2×2 (claim/close сверху, reset снизу)
         if (this._activeOverlay.querySelector('.mm-quest-list')) {
           this._navigateQuest(e);
@@ -892,7 +907,7 @@ _updateQuestBadge() {
     // Клик мышью — сбрасываем клавиатурный фокус
     this.el.addEventListener('pointerdown', (e) => {
       this._lastInputWasKeyboard = false;
-      this.el.querySelectorAll('.kbd-focus').forEach(el => el.classList.remove('kbd-focus'));
+      clearFocus(this.el);
       this._navEl = null;
 
       // Если открыт оверлей настроек — синхронизировать _settingsNav
@@ -902,9 +917,10 @@ _updateQuestBadge() {
           const rowEl = opt.closest('.mm-row');
           const rows = [...this._activeOverlay.querySelectorAll('.mm-row')];
           const idx = rows.indexOf(rowEl);
-          if (idx >= 0) this._settingsNav = { row: idx };
+          // row 0 — кнопка «В МЕНЮ», строки настроек начинаются с 1
+          if (idx >= 0) this._settingsNav = { row: idx + 1, col: 0 };
         } else if (e.target.closest('[data-close]')) {
-          this._settingsNav = { row: -1 };
+          this._settingsNav = { row: 0, col: 0 };
         }
         return;
       }
@@ -918,10 +934,11 @@ _updateQuestBadge() {
       }
 
       // Синхронизировать _navPos с кнопкой, на которую кликнули мышью
-      const target = e.target.closest('[data-open], [data-mode], [data-fs-toggle]');
+      const target = e.target.closest('[data-open], [data-mode], [data-fs-toggle], [data-auth="login"]');
       if (!target) return;
       let id = null;
       if (target.dataset.open) id = target.dataset.open;
+      else if (target.dataset.auth === 'login') id = 'auth';
       else if (target.dataset.mode === 'podkidnoy') id = 'mode0';
       else if (target.dataset.mode === 'perevodnoy') id = 'mode1';
       else if (target.hasAttribute('data-fs-toggle')) id = 'fs';
@@ -1140,7 +1157,7 @@ _updateQuestBadge() {
           if (wasKeyboard) {
             requestAnimationFrame(() => {
               if (tutBtn && ov.style.display !== 'none') {
-                ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+                clearFocus(ov);
                 tutBtn.classList.add('kbd-focus');
               }
             });
@@ -1182,48 +1199,26 @@ _updateQuestBadge() {
     // ↑/↓ — прокрутка контента (без перемещения фокуса)
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       const body = ov.querySelector('.help-body');
-      if (body) {
-        const dy = e.key === 'ArrowUp' ? -400 : +400;
-        body.scrollBy({ top: dy, behavior: 'smooth' });
-      }
+      if (body) body.scrollBy({ top: e.key === 'ArrowUp' ? -400 : 400, behavior: 'smooth' });
       return;
     }
 
-    // ←/→ — переключение между кнопками ↑ / ↓ / В МЕНЮ
-    const upBtn    = ov.querySelector('[data-help-up]');
-    const downBtn  = ov.querySelector('[data-help-down]');
-    const tutBtn   = ov.querySelector('[data-tutorial-btn]');
-    const closeBtn = ov.querySelector('[data-close]');
-    const list = [upBtn, downBtn, tutBtn, closeBtn].filter(Boolean);
+    // ←/→ и Enter — по кнопкам «вверх / вниз / туториал / в меню»
+    const list = [
+      ov.querySelector('[data-help-up]'),
+      ov.querySelector('[data-help-down]'),
+      ov.querySelector('[data-tutorial-btn]'),
+      ov.querySelector('[data-close]'),
+    ].filter(Boolean);
     if (!list.length) return;
 
-    let cur = ov.querySelector('.kbd-focus');
-    if (!cur || !list.includes(cur)) {
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      if (closeBtn) closeBtn.classList.add('kbd-focus');
-      cur = closeBtn;
-    }
-
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      const dir = e.key === 'ArrowRight' ? 1 : -1;
-      const curIdx = list.indexOf(cur);
-      const nextIdx = (curIdx + dir + list.length) % list.length;
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      list[nextIdx].classList.add('kbd-focus');
-      return;
-    }
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      audio.playSfx('tap');
-      cur.click();
-      return;
-    }
+    navigateLinear(ov, e, list, { initial: ov.querySelector('[data-close]') });
   }
 
   _focusStyleDefault() {
     const ov = this._activeOverlay;
     if (!ov) return;
-    ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+    clearFocus(ov);
     
     // Выходим, если это тач или мышь
     if (!window.__lastInputWasKeyboard) return;
@@ -1247,13 +1242,7 @@ _updateQuestBadge() {
     const tiles = [...ov.querySelectorAll('.mm-tile')];
     const footer = [...ov.querySelectorAll('.mm-overlay__footer .mm-btn')];
 
-    const focusEl = (el) => {
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      if (el) {
-        el.classList.add('kbd-focus');
-        el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }
-    };
+    const focusEl = (el) => focusElement(ov, el, { scroll: true });
 
     // Enter / Space
     if (e.key === 'Enter' || e.key === ' ') {
@@ -1284,11 +1273,8 @@ _updateQuestBadge() {
     if (nav.level === 'tiles') {
       if (!tiles.length) return;
 
-      // Реальное число столбцов — по первой строке
-      const topRow = tiles.filter(t => Math.abs(
-        t.getBoundingClientRect().top - tiles[0].getBoundingClientRect().top
-      ) < 5);
-      const cols = Math.max(1, topRow.length);
+      // Реальное число столбцов — по геометрии верхнего ряда
+      const cols = gridColumns(tiles);
 
       const curRow = Math.floor(nav.tileIdx / cols);
       const curCol = nav.tileIdx % cols;
@@ -1404,7 +1390,7 @@ _openLang() {
     this._refreshSettings(ov);
     ov.style.display = 'flex';
     this._activeOverlay = ov;
-    this._settingsNav = { row: -1 };
+    this._settingsNav = { row: 0, col: 0 };   // 0 — кнопка «В МЕНЮ»
     requestAnimationFrame(() => this._autoFocusOverlay(ov, '[data-close]'));
   }
   _buildSettings() {
@@ -1558,7 +1544,7 @@ _openShop() {
 
     // Снимаем фокус с кнопок магазина — приоритет у welcome-окна
     if (this._activeOverlay) {
-      this._activeOverlay.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+      clearFocus(this._activeOverlay);
     }
 
     const el = document.createElement('div');
@@ -1671,7 +1657,7 @@ if (!root.querySelector('.shop-box')) {
         const tiles = [...inner.querySelectorAll('.shop-item')];
         const target = tiles[fidx];
         if (target) {
-          root.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+          clearFocus(root);
           target.classList.add('kbd-focus');
           target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
           return;
@@ -2021,7 +2007,7 @@ showConfirm(
         const tiles = [...root.querySelectorAll('.shop-item')];
         const target = tiles[pf.index];
         if (target) {
-          root.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+          clearFocus(root);
           target.classList.add('kbd-focus');
           target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
@@ -2258,7 +2244,7 @@ _renderStyleTiles(root) {
     if (ov) {
       const target = tiles.children[Math.min(this._styleNav.tileIdx, tiles.children.length - 1)];
       if (target) {
-        ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+        clearFocus(ov);
         target.classList.add('kbd-focus');
         target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
@@ -2650,7 +2636,7 @@ _showTrialUnlockedDialog(questEl) {
   /** Поставить клавиатурный фокус на первый интерактивный элемент оверлея. */
   _autoFocusOverlay(root, selector = '[data-close], button') {
     if (!root) return;
-    this.el.querySelectorAll('.kbd-focus').forEach(e => e.classList.remove('kbd-focus'));
+    clearFocus(this.el);
     if (!window.__lastInputWasKeyboard) return; // Не ставим фокус, если ввод был мышью/тачем
     const el = root.querySelector(selector);
     if (el) {
@@ -2661,7 +2647,7 @@ _showTrialUnlockedDialog(questEl) {
 
   /** Снять фокус с оверлея. */
   _clearOverlayFocus() {
-    this.el.querySelectorAll('.kbd-focus').forEach(e => e.classList.remove('kbd-focus'));
+    clearFocus(this.el);
     this._overlayNavEl = null;
   }
 
@@ -2714,7 +2700,7 @@ _showTrialUnlockedDialog(questEl) {
   _focusShopDefault() {
     const ov = this._activeOverlay;
     if (!ov) return;
-    ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
+    clearFocus(ov);
     
     // Выходим, если это тач или мышь
     if (!window.__lastInputWasKeyboard) return;
@@ -2739,72 +2725,20 @@ _showTrialUnlockedDialog(questEl) {
     const menuBtn = ov.querySelector('.shop-footer [data-close]');
     if (!catBtns.length || !menuBtn) return;
 
-    // По ТЗ: по умолчанию — В МЕНЮ
-    const list = [...catBtns, menuBtn];
-
-    let cur = ov.querySelector('.kbd-focus');
-    if (!cur || !list.includes(cur)) {
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      menuBtn.classList.add('kbd-focus');
-      cur = menuBtn;
-    }
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      audio.playSfx('tap');
-      cur.click();
-      return;
-    }
-
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      const dir = e.key === 'ArrowDown' ? 1 : -1;
-      const curIdx = list.indexOf(cur);
-      const nextIdx = (curIdx + dir + list.length) % list.length;
-      list.forEach(x => x.classList.remove('kbd-focus'));
-      list[nextIdx].classList.add('kbd-focus');
-      return;
-    }
-
-    // ←/→ в категориях не двигают (одна колонка)
+    // По ТЗ по умолчанию — «В МЕНЮ»; ←/→ в одной колонке не двигают
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && !isActivate(e)) return;
+    navigateLinear(ov, e, [...catBtns, menuBtn], { initial: menuBtn });
   }
 
   _navigateShopItems(e, ov) {
-    // Плитки витрины + кнопки НАЗАД/В МЕНЮ.
-    // Реализуем линейный обход (визуальная сетка — с гравитацией в следующих итерациях).
+    // Плитки витрины + «НАЗАД / В МЕНЮ», линейный обход с зацикливанием
     const tiles = [...ov.querySelectorAll('.shop-item')];
     const backBtn = ov.querySelector('.shop-footer [data-back]');
     const menuBtn = ov.querySelector('.shop-footer [data-close]');
-
-    const btns = [backBtn, menuBtn].filter(Boolean);
-    const list = [...tiles, ...btns];
-
+    const list = [...tiles, backBtn, menuBtn].filter(Boolean);
     if (!list.length) return;
 
-    let cur = ov.querySelector('.kbd-focus');
-    if (!cur || !list.includes(cur)) {
-      // При входе — фокус на НАЗАД (по ТЗ), если есть; иначе на первую плитку
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      const first = backBtn || tiles[0];
-      if (first) first.classList.add('kbd-focus');
-      cur = first;
-    }
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      audio.playSfx('tap');
-      cur.click();
-      return;
-    }
-
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' ||
-        e.key === 'ArrowUp'   || e.key === 'ArrowLeft') {
-      const dir = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
-      const curIdx = list.indexOf(cur);
-      const nextIdx = (curIdx + dir + list.length) % list.length;
-      list.forEach(x => x.classList.remove('kbd-focus'));
-      list[nextIdx].classList.add('kbd-focus');
-      // Прокрутить плитку в зону видимости
-      list[nextIdx].scrollIntoView({ block: 'nearest' });
-      return;
-    }
+    navigateLinear(ov, e, list, { initial: backBtn || tiles[0], scroll: true });
   }
 
   _navigateQuest(e) {
@@ -2816,149 +2750,50 @@ _showTrialUnlockedDialog(questEl) {
     const reset = ov.querySelector('[data-reset]');
     if (!claim || !close || !reset) return;
 
-    // Ряды: [claim, close] / [reset]
-    const rows = [
-      [claim, close],
-      [reset],
-    ];
-
     this._lastInputWasKeyboard = true;
     e.preventDefault();
 
+    // Ряды: [«Забрать», «В меню»] / [«Сброс»]
     if (!this._questNav) this._questNav = { row: 0, col: 0 };
-    let { row, col } = this._questNav;
-    if (row < 0 || row >= rows.length) row = 0;
-    if (col < 0 || col >= rows[row].length) col = 0;
-
-    const focusEl = (el) => {
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      if (el) {
-        el.classList.add('kbd-focus');
-        this._overlayNavEl = el;
-      }
-    };
-
-    // Enter / Space
-    if (e.key === 'Enter' || e.key === ' ') {
-      const cur = ov.querySelector('.kbd-focus');
-      if (cur) { audio.playSfx('tap'); cur.click(); }
-      return;
-    }
-
-    // ← / →
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      const curRow = rows[row];
-      if (!curRow || curRow.length <= 1) return;
-      const dir = e.key === 'ArrowRight' ? 1 : -1;
-      const nextCol = (col + dir + curRow.length) % curRow.length;
-      this._questNav = { row, col: nextCol };
-      focusEl(curRow[nextCol]);
-      return;
-    }
-
-    // ↑ / ↓
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      const dir = e.key === 'ArrowDown' ? 1 : -1;
-      const nextRow = (row + dir + rows.length) % rows.length;
-      const targetRow = rows[nextRow];
-      const nextCol = Math.min(col, targetRow.length - 1);
-      this._questNav = { row: nextRow, col: nextCol };
-      focusEl(targetRow[nextCol]);
-      return;
-    }
+    navigateRows(ov, e, () => [[claim, close], [reset]], this._questNav);
   }
 
   _navigateMsg(e) {
     const el = document.querySelector('.msg-overlay');
     if (!el) return;
 
-    // Собираем все focusable элементы: чекбоксы + кнопки
-    const focusable = [];
-    el.querySelectorAll('input[type="checkbox"]').forEach(cb => focusable.push(cb));
-    el.querySelectorAll('button').forEach(b => focusable.push(b));
-    if (!focusable.length) return;
+    // Чекбоксы + кнопки в порядке DOM (как в прежней реализации)
+    const list = focusableControls(el);
+    if (!list.length) return;
 
     this._lastInputWasKeyboard = true;
     e.preventDefault();
     e.stopImmediatePropagation();
 
-    let cur = el.querySelector('.kbd-focus');
-    if (!cur || !focusable.includes(cur)) {
-      focusable[0].classList.add('kbd-focus');
-      cur = focusable[0];
-    }
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      audio.playSfx('tap');
-      if (cur.tagName === 'INPUT' && cur.type === 'checkbox') {
-        cur.checked = !cur.checked;
-      } else {
-        cur.click();
-      }
-      return;
-    }
-
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
-        e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      const dir = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
-      const curIdx = focusable.indexOf(cur);
-      const nextIdx = (curIdx + dir + focusable.length) % focusable.length;
-      focusable.forEach(x => x.classList.remove('kbd-focus'));
-      focusable[nextIdx].classList.add('kbd-focus');
-      return;
-    }
+    navigateLinear(el, e, list);
   }
 
 _navigateLang(e) {
   const ov = this._activeOverlay;
   if (!ov) return;
+
   this._lastInputWasKeyboard = true;
   e.preventDefault();
+
   const list = [...ov.querySelectorAll('[data-lang], [data-close]')];
-  if (!list.length) return;
-
-  let cur = ov.querySelector('.kbd-focus');
-  if (!cur || !list.includes(cur)) {
-    list[0].classList.add('kbd-focus');
-    cur = list[0];
-  }
-
-  if (e.key === 'Enter' || e.key === ' ') {
-    audio.playSfx('tap');
-    cur.click();
-    return;
-  }
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-    const dir = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
-    const idx = list.indexOf(cur);
-    const nextIdx = (idx + dir + list.length) % list.length;
-    list.forEach(x => x.classList.remove('kbd-focus'));
-    list[nextIdx].classList.add('kbd-focus');
-  }
+  navigateLinear(ov, e, list);
 }
 
   _navigateSettings(e) {
     const ov = this._activeOverlay;
     if (!ov) return;
 
-    const rows = [...ov.querySelectorAll('.mm-row')];
+    const rowEls = [...ov.querySelectorAll('.mm-row')];
     const menuBtn = ov.querySelector('[data-close]');
     if (!menuBtn) return;
 
     this._lastInputWasKeyboard = true;
     e.preventDefault();
-
-    // Индексы: -1 = кнопка «В МЕНЮ», 0..rows.length-1 = строки
-    if (!this._settingsNav) this._settingsNav = { row: -1 };
-    const curRow = this._settingsNav.row;
-
-    const focusEl = (el) => {
-      ov.querySelectorAll('.kbd-focus').forEach(x => x.classList.remove('kbd-focus'));
-      if (el) {
-        el.classList.add('kbd-focus');
-        this._overlayNavEl = el;
-      }
-    };
 
     const activeBtnInRow = (rowEl) => {
       if (!rowEl) return null;
@@ -2966,49 +2801,29 @@ _navigateLang(e) {
       return opts.find(b => b.classList.contains('mm-opt--active')) || opts[0] || null;
     };
 
-    // Enter / Space — клик по текущему фокусу
-    if (e.key === 'Enter' || e.key === ' ') {
-      const cur = ov.querySelector('.kbd-focus');
-      if (cur) { audio.playSfx('tap'); cur.click(); }
-      return;
-    }
+    // Кольцо: строка 0 — кнопка «В МЕНЮ», дальше строки настроек.
+    // В строке настроек фокус стоит на текущей опции.
+    if (!this._settingsNav) this._settingsNav = { row: 0, col: 0 };
 
-    // ↑ / ↓ — строки и «В МЕНЮ»
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      const dir = e.key === 'ArrowDown' ? 1 : -1;
-      let nextRow = curRow + dir;
-
-      // Полный wrap по кольцу: [0..N-1] + «В МЕНЮ» (-1).
-      // ↓: -1 → 0 → 1 → ... → N-1 → -1
-      // ↑: -1 → N-1 → N-2 → ... → 0 → -1
-      if (curRow === -1 && dir === -1) nextRow = rows.length - 1;
-      if (nextRow >= rows.length) nextRow = -1;
-
-      this._settingsNav.row = nextRow;
-
-      if (nextRow === -1) {
-        focusEl(menuBtn);
-      } else {
-        focusEl(activeBtnInRow(rows[nextRow]));
-      }
-      return;
-    }
-
-    // ← / → — опции в текущей строке (с wrap)
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      if (curRow === -1) return;
-      const rowEl = rows[curRow];
-      if (!rowEl) return;
-      const opts = [...rowEl.querySelectorAll('.mm-opt')];
-      if (!opts.length) return;
-
-      const cur = ov.querySelector('.kbd-focus');
-      const curIdx = opts.indexOf(cur);
-      const dir = e.key === 'ArrowRight' ? 1 : -1;
-      const nextIdx = curIdx < 0 ? 0 : (curIdx + dir + opts.length) % opts.length;
-      focusEl(opts[nextIdx]);
-      return;
-    }
+    navigateRows(
+      ov,
+      e,
+      () => [[menuBtn], ...rowEls.map(rowEl => [activeBtnInRow(rowEl)])],
+      this._settingsNav,
+      {
+        onHorizontal: (ev, _rowItems, state) => {
+          if (state.row === 0) return;            // на «В МЕНЮ» ←/→ не двигают
+          const rowEl = rowEls[state.row - 1];
+          if (!rowEl) return;
+          const opts = [...rowEl.querySelectorAll('.mm-opt')];
+          if (!opts.length) return;
+          const cur = currentFocus(ov);
+          const idx = opts.indexOf(cur);
+          const dir = ev.key === 'ArrowRight' ? 1 : -1;
+          focusElement(ov, opts[idx < 0 ? 0 : (idx + dir + opts.length) % opts.length]);
+        },
+      },
+    );
   }
 
   _bindClose(root) {
@@ -3076,6 +2891,46 @@ if (claimed) {
       hint.textContent = t('quest.hintClassic');
       list.appendChild(hint);
     }
+  }
+
+  _navigateAchievements(e) {
+    const ov = this._activeOverlay;
+    if (!ov) return;
+    const grid = ov.querySelector('.mm-achievements-grid');
+    const tiles = [...grid.querySelectorAll('.mm-achievement')];
+    const close = ov.querySelector('[data-close]');
+    const items = [...tiles, close].filter(Boolean);
+    if (!items.length || (!isArrow(e) && !isActivate(e))) return;
+
+    this._lastInputWasKeyboard = true;
+    e.preventDefault();
+    const cur = currentFocus(ov);
+    let idx = items.indexOf(cur);
+    if (idx < 0) idx = items.length - 1; // при входе фокус на «Закрыть»
+
+    if (isActivate(e)) {
+      activateFocused(ov);
+      return;
+    }
+
+    if (cur === close) {
+      if (e.key === 'ArrowUp') focusElement(ov, tiles.at(-1));
+      return;
+    }
+
+    const row = Math.floor(idx / 5);
+    const col = idx % 5;
+    let next = idx;
+    if (e.key === 'ArrowLeft') next = row * 5 + (col + 4) % 5;
+    if (e.key === 'ArrowRight') next = row * 5 + (col + 1) % 5;
+    if (e.key === 'ArrowDown') {
+      next = row === 0 ? Math.min(idx + 5, tiles.length - 1) : tiles.length;
+    }
+    if (e.key === 'ArrowUp') {
+      if (row === 0) next = items.length - 1;
+      else next = Math.min(idx - 5, tiles.length - 1);
+    }
+    focusElement(ov, items[next], { scroll: true });
   }
 
   _openAchievements() {
