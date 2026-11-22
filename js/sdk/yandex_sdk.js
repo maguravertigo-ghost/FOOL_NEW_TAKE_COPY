@@ -28,6 +28,15 @@ export class YandexSDK {
 		host.endsWith('.local');
 
 	  const forceLocal = new URLSearchParams(location.search).has('sdk');
+	  const isGithubPages = host === 'github.io' || host.endsWith('.github.io');
+
+	  // GitHub Pages — статический preview, не контейнер Яндекс Игр.
+	  // SDK там загружается, но не находит родительское окружение и засыпает
+	  // консоль ошибками postMessage / appId.
+	  if (isGithubPages && !forceLocal) {
+		console.log('[sdk] GitHub Pages preview — SDK disabled');
+		return false;
+	  }
 
 	  // на localhost по умолчанию SDK не грузим,
 	  // если очень нужно — открывай с ?sdk
