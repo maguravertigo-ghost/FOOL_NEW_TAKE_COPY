@@ -17,7 +17,7 @@ export function compareCards(a, b) {
 }
 
 export class Accordion {
-  constructor({ scene, interp, anchorL, anchorR, insertAnchor, baseMinDist, fanDir = 1, sortCards = true }) {
+  constructor({ scene, interp, anchorL, anchorR, insertAnchor, baseMinDist, fanDir = 1, sortCards = true, cardLayer = null }) {
     this.scene = scene;
     this.interp = interp;
     this.anchorL = anchorL;
@@ -26,6 +26,7 @@ export class Accordion {
     this.baseMinDist = baseMinDist;
     this.fanDir = fanDir;
     this.sortCards = sortCards;        // false — порядок карт = порядок прихода
+    this.cardLayer = cardLayer;
 
     this.cards = [];
     this.slotByUid = new Map();
@@ -35,6 +36,12 @@ export class Accordion {
   size() { return this.cards.length; }
 
   _nextFlightZ() { return Z_FLIGHT_BASE + (++this._flightCounter); }
+
+  _adoptCard(card) {
+    if (this.cardLayer && card?.el && card.el.parentNode !== this.cardLayer) {
+      this.cardLayer.appendChild(card.el);
+    }
+  }
 
   _applyZ() { this.cards.forEach((c, i) => c.setZIndex(Z_BASE + i)); }
 
@@ -147,6 +154,7 @@ export class Accordion {
 
     this.cards = newCards;
     this.slotByUid = newSlotByUid;
+    this._adoptCard(card);
 
     newCards.forEach((c, i) => { if (c !== card) c.setZIndex(Z_BASE + i); });
     card.setZIndex(this._nextFlightZ());
@@ -342,6 +350,7 @@ export class Accordion {
     // гарантированно выше колоды (50+) и стола (200+).
     const baseZ = 1500;
     cards.forEach((c, i) => {
+      this._adoptCard(c);
       c.marker = entryMarker;
       c.setPosition(pEntry.x, pEntry.y);
       c.setZIndex(baseZ - i);
@@ -517,6 +526,7 @@ export class Accordion {
 
     const baseZ = 1500;
     cards.forEach((c, i) => {
+      this._adoptCard(c);
       c.marker = null;
       c.setZIndex(baseZ - i);
     });

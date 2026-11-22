@@ -1060,6 +1060,7 @@ async _startGameFromMenu(mode) {
       anchorL: this.markers.get('acc_player_L'),
       anchorR: this.markers.get('acc_player_R'),
       insertAnchor: this.markers.get('ins_player_L'),
+      cardLayer: this.handLayer,
       baseMinDist: REAL.w * 0.9,
       fanDir: +1,
     });
