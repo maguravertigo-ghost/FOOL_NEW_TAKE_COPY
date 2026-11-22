@@ -437,6 +437,7 @@ setLang(savedLang || sdkLang, { persist: false });
 _createDevTools() {
   if (!DEV_MODE) return;
   window.__gameProfiler = performanceProfiler;
+  if (window.__devPrepaintFaces === undefined) window.__devPrepaintFaces = false;
 
   const wrap = document.createElement('div');
   wrap.id = 'dev-tools';
@@ -527,6 +528,16 @@ _createDevTools() {
     }
   });
   wrap.appendChild(eyeBtn);
+
+  let prepaintOn = false;
+  const prepaintBtn = mkBtn('PREPAINT: OFF', '#37474f', '#78909c', () => {
+    prepaintOn = !prepaintOn;
+    window.__devPrepaintFaces = prepaintOn;
+    prepaintBtn.textContent = `PREPAINT: ${prepaintOn ? 'ON' : 'OFF'}`;
+    prepaintBtn.style.background = prepaintOn ? '#00838f' : '#37474f';
+    for (const card of this.cards || []) card.setFaceUp(card.faceUp);
+  });
+  wrap.appendChild(prepaintBtn);
 
   // Тест погон
   let pogonTest = 0;

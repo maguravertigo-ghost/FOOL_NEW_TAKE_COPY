@@ -191,8 +191,23 @@ _rebuildFace() {
   setFaceUp(v) {
     const started = performance.now();
     this.faceUp = !!v;
-    this.shirtEl.style.display = this.faceUp ? 'none' : 'block';
-    this.faceEl.style.display  = this.faceUp ? 'block' : 'none';
+    if (window.__devPrepaintFaces) {
+      // Diagnostic A/B mode: keep the face subtree rendered under the opaque shirt
+      // so revealing it does not trigger its first display/layout/paint.
+      this.shirtEl.style.display = this.faceUp ? 'none' : 'block';
+      this.shirtEl.style.zIndex = this.faceUp ? '0' : '2';
+      this.faceEl.style.display = 'block';
+      this.faceEl.style.zIndex = '1';
+      this.faceEl.style.willChange = 'transform';
+      this.faceEl.style.transform = 'translateZ(0)';
+    } else {
+      this.shirtEl.style.display = this.faceUp ? 'none' : 'block';
+      this.faceEl.style.display  = this.faceUp ? 'block' : 'none';
+      this.shirtEl.style.zIndex = '';
+      this.faceEl.style.zIndex = '';
+      this.faceEl.style.willChange = '';
+      this.faceEl.style.transform = '';
+    }
     const profiler = window.__gameProfiler;
     profiler?.record('card.setFaceUp', performance.now() - started, { faceUp: this.faceUp });
     if (profiler?.active && this.faceUp) {
