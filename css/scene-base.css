@@ -60,7 +60,10 @@ body {
 #game-layer {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  /* Карты руки должны рисоваться поверх кнопки действия при тесной раскладке. */
+  z-index: 111;
+  /* Ввод идёт через mouse-capture-layer, визуальный слой не перехватывает его. */
+  pointer-events: none;
 }
 
 #debug-layer {

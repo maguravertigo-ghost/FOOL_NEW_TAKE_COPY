@@ -164,6 +164,37 @@ await step('blocked hand stays on the player action button', async () => {
   if (duringDeal._kbdFocusOnButton || duringDealButton.classList.values.has('kbd-focus')) {
     throw new Error('фокус остался на disabled кнопке во время дораздачи');
   }
+
+  let finishCalled = false;
+  let resultsCalled = false;
+  const endRound = Object.create(GameSession.prototype);
+  Object.assign(endRound, {
+    _busy: false, _finishingGame: false,
+    round: { attack: 'player', table: [] },
+    app: { accordionPlayer: { cards: [] } },
+    _checkImmediateEnd: () => null,
+    _clearSlotHighlights() {}, _deselect() {}, _animateDiscard: async () => {},
+    _updateHUD() {}, _updateButton() {}, _updateAIMessage() {}, _refillHands: async () => {},
+    _checkGameEnd: () => 'player',
+    _finishGame: async winner => { finishCalled = winner === 'player'; },
+    _showGameOver() { resultsCalled = true; },
+  });
+  await endRound._endRound('discard');
+  if (!finishCalled || resultsCalled) throw new Error('победа после добора обошла финальный путь с кольцом');
+});
+
+await step('финальный таймер отображает и снимает кольцо прогресса', async () => {
+  const { GameSession } = await import('file://' + path.join(ROOT, 'js/game/game_session.js'));
+  const session = Object.create(GameSession.prototype);
+  session.actionBtn = document.createElement('button');
+  session._victoryPending = false;
+  document.body.appendChild(session.actionBtn);
+  const pending = session._waitFinishProgress();
+  if (!session.actionBtn.querySelector('.btn-ring')) throw new Error('нет кольца прогресса');
+  session._victoryResolve();
+  await pending;
+  if (session.actionBtn.querySelector('.btn-ring') || session._victoryPending) throw new Error('кольцо не удалено после отмены ожидания');
+  session.actionBtn.remove();
 });
 
 await step('first-run settings match requested defaults', async () => {

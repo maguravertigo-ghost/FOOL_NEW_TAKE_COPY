@@ -752,11 +752,14 @@ _showTrumpSuitIcon() {
 
     const winner = this._checkGameEnd();
     if (winner) {
-	  this._gameOverPending = true;
       if (winner === 'player') {
-        await this._waitFinishProgress();
+        // Единый финальный путь: включить кнопку, показать финальную метку,
+        // запустить кольцо и только затем открыть результаты.
+        await this._finishGame(winner);
+      } else {
+        this._gameOverPending = true;
+        this._showGameOver(winner);
       }
-      this._showGameOver(winner);
       return;
     }
 
