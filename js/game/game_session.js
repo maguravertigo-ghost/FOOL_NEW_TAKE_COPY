@@ -59,6 +59,8 @@ export class GameSession {
     this.markers = app.markers;
     this.interp = app.interp;
     this.gameLayer = app.gameLayer;
+    this.discardLayer = app.discardLayer || document.getElementById('discard-layer');
+    this.handLayer = app.handLayer || document.getElementById('hand-layer');
     this.cards = app.cards;
     this.hud = app.hud;
 
@@ -184,6 +186,7 @@ export class GameSession {
   });
 
   this.app.accordionPlayer.setCards(playerCards);
+  this._movePlayerHandToFront();
   this.app.accordionCpu.setCards(cpuCards);
 
   this.trump = sc.trump;
@@ -538,6 +541,7 @@ _showTrumpSuitIcon() {
     }
 
     this.app.accordionPlayer.setCards(pCards);
+    this._movePlayerHandToFront();
     this.app.accordionCpu.setCards(cCards);
   }
 
@@ -810,11 +814,13 @@ async _animateTake(cards, defender) {
       }
       acc.cards.sort(cmpCard);
       acc.layoutInstant();
+      if (defender === 'player') this._movePlayerHandToFront();
       return;
     }
 
     // 3. Анимация: индивидуально на линию вставки → в руку с раздвиганием
     await acc.takeFromTable(cards, { stagger: 90, settleDelay: 250 });
+    if (defender === 'player') this._movePlayerHandToFront();
   }
 
   /**
@@ -852,6 +858,7 @@ async _animateTake(cards, defender) {
         `disc_${c.uid}`, ang
       );
       c.marker = null;
+      this._moveCardToDiscardLayer(c);
       setTimeout(() => {
         if (this.skipAnimation) {
           c.setPosition(toM.x * this.scene.width, toM.y * this.scene.height);
@@ -916,6 +923,7 @@ async _animateTake(cards, defender) {
         });
       }
     }
+    this._movePlayerHandToFront();
     this.app.deckStackCards = this.stack;
   }
 
@@ -1690,6 +1698,7 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
 
     const slotM = this.markers.get(`table_atk_${idx}`);
     const acc = byWho === 'player' ? this.app.accordionPlayer : this.app.accordionCpu;
+    this._moveCardToBoardLayer(card);
     acc.extractCard(card);
 
     audio.playSfx('card_fly');
@@ -1746,6 +1755,7 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
     const r = this.round;
     const slotM = this.markers.get(`table_def_${pairIdx}`);
     const acc = byWho === 'player' ? this.app.accordionPlayer : this.app.accordionCpu;
+    this._moveCardToBoardLayer(card);
     acc.extractCard(card);
 	audio.playSfx('card_fly');       // ← добавить
 
@@ -1829,6 +1839,7 @@ if (!stillUnbeaten && r.table.length >= 6) {
     const idx = r.table.length;
     const slotM = this.markers.get(`table_atk_${idx}`);
     const acc = byWho === 'player' ? this.app.accordionPlayer : this.app.accordionCpu;
+    this._moveCardToBoardLayer(card);
     acc.extractCard(card);
 	audio.playSfx('card_fly');       // ← добавить
 
@@ -2527,6 +2538,7 @@ _confirmSlot(slot) {
       if (idx >= 6) break;
 
       const slotM = this.markers.get(`table_atk_${idx}`);
+      this._moveCardToBoardLayer(card);
       acc.extractCard(card);
       audio.playSfx('card_fly');
 
@@ -2944,6 +2956,7 @@ _maybeAutoFocusOnButton() {
       c.setFaceUp(false); return c;
     });
     this.app.accordionPlayer.setCards(pCards);
+    this._movePlayerHandToFront();
     this.app.accordionCpu.setCards(cCards);
 
     // стек колоды
@@ -2979,6 +2992,25 @@ _maybeAutoFocusOnButton() {
 
     if (this.app.debug) this.app.debug.requestRender();
 	this._updateDeckCounter?.();
+  }
+
+  _movePlayerHandToFront() {
+    if (!this.handLayer || !this.app.accordionPlayer) return;
+    for (const card of this.app.accordionPlayer.cards) {
+      if (card.el.parentNode !== this.handLayer) this.handLayer.appendChild(card.el);
+    }
+  }
+
+  _moveCardToDiscardLayer(card) {
+    if (card?.el && this.discardLayer && card.el.parentNode !== this.discardLayer) {
+      this.discardLayer.appendChild(card.el);
+    }
+  }
+
+  _moveCardToBoardLayer(card) {
+    if (card?.el && this.gameLayer && card.el.parentNode !== this.gameLayer) {
+      this.gameLayer.appendChild(card.el);
+    }
   }
 
   _spawnCard(data, { x = 0, y = 0, z } = {}) {

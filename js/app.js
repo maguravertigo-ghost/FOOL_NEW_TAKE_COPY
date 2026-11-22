@@ -54,6 +54,8 @@ class App {
 
     this.sceneEl      = document.getElementById('scene');
     this.gameLayer    = document.getElementById('game-layer');
+    this.discardLayer = document.getElementById('discard-layer');
+    this.handLayer    = document.getElementById('hand-layer');
     this.debugLayer   = document.getElementById('debug-layer');
     this.captureLayer = document.getElementById('mouse-capture-layer');
 
