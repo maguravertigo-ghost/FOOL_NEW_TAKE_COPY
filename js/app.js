@@ -530,12 +530,11 @@ _createDevTools() {
   wrap.appendChild(eyeBtn);
 
   let prepaintOn = false;
-  const prepaintBtn = mkBtn('PREPAINT: OFF', '#37474f', '#78909c', () => {
+  const prepaintBtn = mkBtn('PREPAINT NEXT: OFF', '#37474f', '#78909c', () => {
     prepaintOn = !prepaintOn;
     window.__devPrepaintFaces = prepaintOn;
-    prepaintBtn.textContent = `PREPAINT: ${prepaintOn ? 'ON' : 'OFF'}`;
+    prepaintBtn.textContent = `PREPAINT NEXT: ${prepaintOn ? 'ON' : 'OFF'}`;
     prepaintBtn.style.background = prepaintOn ? '#00838f' : '#37474f';
-    for (const card of this.cards || []) card.setFaceUp(card.faceUp);
   });
   wrap.appendChild(prepaintBtn);
 

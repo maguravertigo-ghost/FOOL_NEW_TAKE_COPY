@@ -188,12 +188,28 @@ _rebuildFace() {
    *  Состояние
    * ================================================================ */
 
+  prepareFaceForFlip() {
+    if (!window.__devPrepaintFaces || this._devFacePrepared) return;
+    this._devFacePrepared = true;
+    const started = performance.now();
+    this.setFaceUp(this.faceUp);
+    // Force styles/layout to settle before the flip reaches its edge.
+    this.faceEl.getBoundingClientRect();
+    window.__gameProfiler?.record('card.prepareFace', performance.now() - started);
+    window.__gameProfiler?.mark('card-face-prepared', { rank: this.data.rank, suit: this.data.suit });
+  }
+
+  finishFacePreparation() {
+    if (!this._devFacePrepared) return;
+    this._devFacePrepared = false;
+    this.setFaceUp(this.faceUp);
+  }
+
   setFaceUp(v) {
     const started = performance.now();
     this.faceUp = !!v;
-    if (window.__devPrepaintFaces) {
-      // Diagnostic A/B mode: keep the face subtree rendered under the opaque shirt
-      // so revealing it does not trigger its first display/layout/paint.
+    if (this._devFacePrepared) {
+      // Diagnostic A/B: prepare only this card shortly before its reveal.
       this.shirtEl.style.display = this.faceUp ? 'none' : 'block';
       this.shirtEl.style.zIndex = this.faceUp ? '0' : '2';
       this.faceEl.style.display = 'block';

@@ -94,7 +94,7 @@ export class PerformanceProfiler {
       capturedAt: new Date().toISOString(),
       durationMs: Math.round(performance.now() - this.startedAt),
       settings,
-      diagnostics: { prepaintFaces: !!window.__devPrepaintFaces },
+      diagnostics: { prepaintNextFace: !!window.__devPrepaintFaces },
       device: {
         userAgent: navigator.userAgent,
         platform: navigator.platform,

@@ -243,6 +243,7 @@ export function moveFlip(interp, card, opts = {}) {
   const easing   = opts.easing   ?? easeInOutCubic;
 
   card._flipping = true;
+  if (toFaceUp) card.prepareFaceForFlip?.();
   const t0 = performance.now();
   let swapped = false;
 
@@ -269,6 +270,7 @@ export function moveFlip(interp, card, opts = {}) {
       // гарантия конечного состояния (на случай погрешностей кэша)
       card.setScaleX(1);
       card.setFaceUp(toFaceUp);
+      card.finishFacePreparation?.();
       card._flipping = false;
 
       const actualMs = performance.now() - t0;
