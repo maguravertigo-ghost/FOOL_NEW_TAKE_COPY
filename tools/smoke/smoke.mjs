@@ -122,6 +122,7 @@ await step('DOMContentLoaded -> App', async () => {
 });
 const app = window.__app;
 const { GameSettings: defaultsUnderTest } = await import('file://' + path.join(ROOT, 'js/game/settings.js'));
+const { Progress: progressUnderTest } = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
 await step('first-run settings match requested defaults', async () => {
   const actual = [defaultsUnderTest.sfxEnabled, defaultsUnderTest.musicEnabled,
     defaultsUnderTest.deckSize, defaultsUnderTest.handLayout, defaultsUnderTest.moveHints,
@@ -130,6 +131,7 @@ await step('first-run settings match requested defaults', async () => {
     defaultsUnderTest.decorStyle];
   const expected = [true, true, 36, 'fan', true, true, 1, 0, 'wide-grid', 'default', 0, -1];
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`неожиданные defaults: ${JSON.stringify(actual)}`);
+  if (!progressUnderTest.purchases.design.includes(3)) throw new Error('широкий дизайн по умолчанию не открыт');
 });
 console.log('app создан:', !!app, '| меню в DOM:', !!document.querySelector('#main-menu, .mm-root, .menu'));
 
