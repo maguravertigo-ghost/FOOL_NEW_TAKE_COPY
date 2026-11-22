@@ -71,14 +71,15 @@ export class PerformanceProfiler {
     if (!this.active) return;
     if (this._lastFrame) {
       const delta = t - this._lastFrame;
-      if (this.frames.length < 60000) this.frames.push(+delta.toFixed(2));
+      if (this.frames.length < 60000) this.frames.push({ t: Math.round(t - this.startedAt), ms: +delta.toFixed(2) });
     }
     this._lastFrame = t;
     this._raf = requestAnimationFrame(this._sampleFrame);
   };
 
   report() {
-    const sorted = [...this.frames].sort((a, b) => a - b);
+    const frameDeltas = this.frames.map((frame) => frame.ms);
+    const sorted = [...frameDeltas].sort((a, b) => a - b);
     const percentile = (p) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : null;
     const totals = Object.fromEntries(Object.entries(this.metrics).map(([name, m]) => [name, {
       count: m.count, totalMs: +m.totalMs.toFixed(2), maxMs: +m.maxMs.toFixed(2), samples: m.samples,
@@ -89,7 +90,7 @@ export class PerformanceProfiler {
       settings = { cardStyle: raw.cardStyle, suitStyle: raw.suitStyle, handLayout: raw.handLayout, deckSize: raw.deckSize, aiLevel: raw.aiLevel };
     } catch { /* settings unavailable */ }
     return {
-      schema: 'fool-performance-v1',
+      schema: 'fool-performance-v2',
       capturedAt: new Date().toISOString(),
       durationMs: Math.round(performance.now() - this.startedAt),
       settings,
@@ -106,7 +107,7 @@ export class PerformanceProfiler {
         p50Ms: percentile(.5), p95Ms: percentile(.95), p99Ms: percentile(.99),
         over20ms: sorted.filter(x => x > 20).length,
         over33ms: sorted.filter(x => x > 33).length,
-        samplesMs: this.frames,
+        samples: this.frames,
       },
       longTasks: this.longTasks,
       metrics: totals,

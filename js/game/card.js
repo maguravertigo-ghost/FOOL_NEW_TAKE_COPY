@@ -196,6 +196,7 @@ _rebuildFace() {
     const profiler = window.__gameProfiler;
     profiler?.record('card.setFaceUp', performance.now() - started, { faceUp: this.faceUp });
     if (profiler?.active && this.faceUp) {
+      profiler.mark('card-face-shown', { rank: this.data.rank, suit: this.data.suit });
       const revealStarted = performance.now();
       requestAnimationFrame(() => requestAnimationFrame(() =>
         profiler.record('card.revealToFrame', performance.now() - revealStarted)
