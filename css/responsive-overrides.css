@@ -21,10 +21,7 @@ body.is-mobile .slot-ui--focus {
   outline: 2px solid rgba(0, 0, 0, 0.85);
   outline-offset: 2px;
   box-shadow: none;
-  animation: slot-mobile-blink 1.2s ease-in-out infinite;
-}
-body.is-mobile .slot-ui--focus {
-  animation-name: slot-mobile-blink-focus;
+  animation: slot-mobile-blink-focus 1.2s ease-in-out infinite;
 }
 @keyframes slot-mobile-blink-focus {
   0%, 100% { border-color: #ffd54f; }
@@ -47,13 +44,6 @@ body.is-mobile .pause-box {
 body.is-mobile .pause-title {
   font-size: calc(52px * var(--ui));
   margin-bottom: calc(18px * var(--ui));
-}
-body.is-mobile .pause-title {
-  font-size: calc(52px * var(--ui));
-  margin-bottom: calc(18px * var(--ui));
-}
-body.is-mobile .pause-volume__label {
-  font-size: calc(18px * var(--ui));
 }
 
 /* ---- msg-overlay (подтверждения, подарок, первые очки, магазин) ---- */
@@ -149,7 +139,6 @@ body.is-mobile .mm-quest-row { padding: calc(10px * var(--ui)) calc(14px * var(-
 body.is-mobile .mm-quest-label { font-size: calc(22px * var(--ui)); }
 body.is-mobile .mm-quest-status { font-size: calc(20px * var(--ui)); }
 body.is-mobile .mm-quest-reward { font-size: calc(24px * var(--ui)); color: #ffd54f; }
-body.is-mobile .mm-quest-hint { font-size: calc(18px * var(--ui)); padding: calc(16px * var(--ui)); }
 
 /* ---- Справка: заголовки секций ---- */
 body.is-mobile .help-section__title { font-size: calc(24px * var(--ui)); }
@@ -277,11 +266,6 @@ body.is-mobile .mm-overlay__box--settings [data-close] {
 }
 
 /* ---- Магазин: ценники ---- */
-body.is-mobile .shop-item__price {
-  font-size: calc(20px * var(--ui));
-  padding: calc(4px * var(--ui)) calc(12px * var(--ui));
-  border-radius: calc(8px * var(--ui));
-}
 body.is-mobile .shop-item__price b {
   font-size: calc(24px * var(--ui));
 }
