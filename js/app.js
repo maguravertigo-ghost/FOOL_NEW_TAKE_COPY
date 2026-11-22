@@ -471,6 +471,7 @@ _createDevTools() {
     return b;
   };
 
+  let devToggle = null;
   const profileStatus = document.createElement('div');
   profileStatus.textContent = 'Профиль: готов';
   profileStatus.style.cssText = 'padding:6px 9px;background:#102027;color:#fff;border-radius:6px;font:12px system-ui,sans-serif;text-align:center;';
@@ -481,6 +482,8 @@ _createDevTools() {
       profileBtn.textContent = 'СТОП + СКАЧАТЬ JSON';
       profileBtn.style.background = '#c62828';
       profileStatus.textContent = 'Запись идёт — повторите проблемные действия';
+      wrap.style.display = 'none';
+      if (devToggle) devToggle.style.display = 'block';
     } else {
       performanceProfiler.stop();
       profileBtn.textContent = 'ЗАПИСАТЬ ЕЩЁ';
@@ -582,6 +585,12 @@ _createDevTools() {
 }));
   
   document.body.appendChild(wrap);
+  devToggle = mkBtn('DEV', '#263238', '#90a4ae', () => {
+    wrap.style.display = '';
+    devToggle.style.display = 'none';
+  });
+  devToggle.style.cssText += 'position:fixed;right:12px;top:12px;z-index:1001;display:none;';
+  document.body.appendChild(devToggle);
   this.devToolsEl = wrap;
   
   // в конце _createDevTools(), после this.devToolsEl = wrap;
