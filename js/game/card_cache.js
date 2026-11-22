@@ -38,6 +38,43 @@ export function warmUpDeck(cardStyle, suitStyle) {
       getCardTemplate(r, s, cardStyle, suitStyle);
 }
 
+/** Build the selected deck and ask the browser to decode every unique face image
+ * before gameplay, avoiding decode work on the first visible reveal. */
+export async function warmUpDeckDecoded(cardStyle, suitStyle) {
+  warmUpDeck(cardStyle, suitStyle);
+  const images = new Map();
+  for (const suit of SUITS) for (const rank of RANKS) {
+    const template = getCardTemplate(rank, suit, cardStyle, suitStyle);
+    for (const image of template.querySelectorAll('img')) {
+      const url = image.currentSrc || image.src;
+      if (url && !images.has(url)) images.set(url, image);
+    }
+    // Rank glyphs are CSS mask URLs rather than <img> nodes.
+    for (const glyph of template.querySelectorAll('.corner__rank-img, .center-rank__rank-img')) {
+      const value = glyph.style.getPropertyValue('--src');
+      const url = value.match(/url\(["']?(.*?)["']?\)/)?.[1];
+      if (url && !images.has(url)) {
+        const image = new Image();
+        image.src = url;
+        images.set(url, image);
+      }
+    }
+  }
+  await Promise.allSettled([...images.entries()].map(async ([url, image]) => {
+    const started = performance.now();
+    let decoded = true;
+    try {
+      if (typeof image.decode === 'function') await image.decode();
+      else if (!image.complete) await new Promise(resolve => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', () => { decoded = false; resolve(); }, { once: true });
+      });
+    } catch { decoded = false; }
+    window.__gameProfiler?.record('card.imageDecode', performance.now() - started, { asset: url.split('/').pop(), decoded });
+  }));
+  return images.size;
+}
+
 export function clearCache() {
   __cache.clear();
 }

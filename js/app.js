@@ -22,7 +22,7 @@ import { PauseOverlay } from './ui/pause_overlay.js';
 import { ScreenFade } from './ui/screen_fade.js';
 import { MainMenu } from './ui/main_menu.js';
 import { REAL, DEV_MODE } from './game/constants.js';
-import { warmUpDeck } from './game/card_cache.js';
+import { warmUpDeck, warmUpDeckDecoded } from './game/card_cache.js';
 import { GameSettings, saveSettings } from './game/settings.js';
 import { Progress, saveProgress, addStylePoints,
            giveFirstRunGift, GIFT_ITEMS } from './game/progress.js';
@@ -633,6 +633,9 @@ async _startGameFromMenu(mode) {
       giftJustGiven = giveFirstRunGift();
       if (giftJustGiven) this._applyGiftStyles();
     }
+
+    // Decode face assets while the screen is covered, before the first deal/reveal.
+    await warmUpDeckDecoded(Card.defaultCardStyle, Card.defaultSuitStyle);
 
     this.menu.hide();
     this._cleanupGame();
