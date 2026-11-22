@@ -638,9 +638,10 @@ _showTrumpSuitIcon() {
     const subM   = this.markers.get('sub_ark');
     const trumpM = this.markers.get('trump');
 
-    // карта уже на месте колоды (или где-то рядом после refill)
+    // Верхняя карта должна вылетать поверх стека; после открытия уходит
+    // под колоду по глубине, пока скользит к месту козыря.
     const dX = card.x, dY = card.y;
-    card.setZIndex(45);//(900);
+    card.setZIndex(50 + this.stack.length + 1);
     card.setFaceUp(false);
 
 	// 1 → 2: ARK + FLIP
@@ -650,7 +651,8 @@ _showTrumpSuitIcon() {
 	  moveArkFlip(this.interp, card, this.scene, dMarker, arkM, { toFaceUp: true, onDone: r });
 	});
 
-    card.setZIndex(45);
+    // Сразу после переворота карта уходит под стопку, не перекрывая её.
+    card.setZIndex(0);
 	audio.playSfx('card_fly');
     await new Promise(r => moveLinear(this.interp, card, this.scene, arkM, subM, {
       fromAngle: 0, toAngle: 0, onDone: r,

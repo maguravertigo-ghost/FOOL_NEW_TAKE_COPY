@@ -53,4 +53,5 @@ export const SUIT_VALUE = (() => {
  * Активируется через ?dev в URL. Перед релизом зафиксировать false
  * и минификатор вырежет все dev-блоки как мёртвый код.
  * ================================================================== */
-export const DEV_MODE = new URLSearchParams(location.search).has('dev');
+export const DEV_MODE = new URLSearchParams(location.search).has('dev')
+  || location.pathname.replace(/\/+$/, '').endsWith('/dev');
