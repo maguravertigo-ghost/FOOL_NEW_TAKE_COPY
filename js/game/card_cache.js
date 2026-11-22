@@ -17,14 +17,19 @@ export function getCardTemplate(rank, suit, cardStyle, suitStyle) {
   const k = key(rank, suit, cardStyle, suitStyle);
   let node = __cache.get(k);
   if (!node) {
+    const started = performance.now();
     node = buildCard(rank, suit, cardStyle, { suitStyle });
     __cache.set(k, node);
+    window.__gameProfiler?.record('card.templateBuild', performance.now() - started, { rank, suit, cardStyle, suitStyle });
   }
   return node;
 }
 
 export function spawnCard(rank, suit, cardStyle, suitStyle) {
-  return getCardTemplate(rank, suit, cardStyle, suitStyle).cloneNode(true);
+  const started = performance.now();
+  const node = getCardTemplate(rank, suit, cardStyle, suitStyle).cloneNode(true);
+  window.__gameProfiler?.record('card.templateClone', performance.now() - started, { rank, suit, cardStyle, suitStyle });
+  return node;
 }
 
 export function warmUpDeck(cardStyle, suitStyle) {

@@ -16,6 +16,7 @@ import { Accordion } from './game/accordion.js';
 import { GameSession } from './game/game_session.js';
 import { DebugOverlay } from './debug/debug_overlay.js';
 import { installLayoutTuner } from './dev/layout_tuner.js';
+import { performanceProfiler } from './dev/performance_profiler.js';
 import { HUD } from './ui/hud.js';
 import { PauseOverlay } from './ui/pause_overlay.js';
 import { ScreenFade } from './ui/screen_fade.js';
@@ -435,6 +436,7 @@ setLang(savedLang || sdkLang, { persist: false });
   }
 _createDevTools() {
   if (!DEV_MODE) return;
+  window.__gameProfiler = performanceProfiler;
 
   const wrap = document.createElement('div');
   wrap.id = 'dev-tools';
@@ -447,6 +449,8 @@ _createDevTools() {
     flex-direction: column;
     gap: 8px;
     align-items: stretch;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
   `;
 
   const mkBtn = (label, bg, border, onClick) => {
@@ -466,6 +470,26 @@ _createDevTools() {
     b.addEventListener('click', onClick);
     return b;
   };
+
+  const profileStatus = document.createElement('div');
+  profileStatus.textContent = 'Профиль: готов';
+  profileStatus.style.cssText = 'padding:6px 9px;background:#102027;color:#fff;border-radius:6px;font:12px system-ui,sans-serif;text-align:center;';
+  wrap.appendChild(profileStatus);
+  const profileBtn = mkBtn('ЗАПИСАТЬ ПРОФИЛЬ', '#00695c', '#4db6ac', () => {
+    if (!performanceProfiler.active) {
+      performanceProfiler.start();
+      profileBtn.textContent = 'СТОП + СКАЧАТЬ JSON';
+      profileBtn.style.background = '#c62828';
+      profileStatus.textContent = 'Запись идёт — повторите проблемные действия';
+    } else {
+      performanceProfiler.stop();
+      profileBtn.textContent = 'ЗАПИСАТЬ ЕЩЁ';
+      profileBtn.style.background = '#00695c';
+      profileStatus.textContent = 'Готово — JSON сохранён';
+      performanceProfiler.download();
+    }
+  });
+  wrap.appendChild(profileBtn);
 
   // +2000 очков стиля
   wrap.appendChild(mkBtn('+2000', '#c62828', '#e57373', () => {

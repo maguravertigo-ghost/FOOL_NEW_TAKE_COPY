@@ -189,9 +189,18 @@ _rebuildFace() {
    * ================================================================ */
 
   setFaceUp(v) {
+    const started = performance.now();
     this.faceUp = !!v;
     this.shirtEl.style.display = this.faceUp ? 'none' : 'block';
     this.faceEl.style.display  = this.faceUp ? 'block' : 'none';
+    const profiler = window.__gameProfiler;
+    profiler?.record('card.setFaceUp', performance.now() - started, { faceUp: this.faceUp });
+    if (profiler?.active && this.faceUp) {
+      const revealStarted = performance.now();
+      requestAnimationFrame(() => requestAnimationFrame(() =>
+        profiler.record('card.revealToFrame', performance.now() - revealStarted)
+      ));
+    }
   }
 
   flip() { this.setFaceUp(!this.faceUp); }

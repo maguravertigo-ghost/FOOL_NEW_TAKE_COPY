@@ -83,6 +83,7 @@ export class Interpolator {
   }
 
   _tick(t) {
+    const profileStarted = window.__gameProfiler?.active ? performance.now() : 0;
 	if (this._paused) { this._rafId = null; return; }
     // Первый кадр после add()/resume() — синтетические 16 мс,
     // чтобы не было рывка из-за рассинхрона performance.now() и rAF timestamp на iOS.
@@ -107,6 +108,7 @@ export class Interpolator {
     }
 	
 	if (typeof this.onTick === 'function') this.onTick();
+    if (profileStarted) window.__gameProfiler?.record('animation.tickWork', performance.now() - profileStarted, { activeMoves: this.moves.length });
   }
 }
 
