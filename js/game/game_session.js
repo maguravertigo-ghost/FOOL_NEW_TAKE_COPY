@@ -2647,11 +2647,13 @@ _repositionActionButton() {
 
     const r = this.round;
 
-    // Фаза END — идёт дораздача карт, ничего не показываем
+    // Фаза END — идёт дораздача карт, ничего не показываем.
+    // Кнопка недоступна, поэтому не должна оставаться точкой клавиатурного фокуса.
     if (r.phase === 'END') {
       this.actionBtn.textContent = '...';
       this.actionBtn.disabled = true;
       this.actionBtn.dataset.state = 'wait';
+      if (this._kbdFocusOnButton) this._clearKbdFocus();
       return;
     }
 

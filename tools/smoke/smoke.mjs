@@ -151,6 +151,19 @@ await step('blocked hand stays on the player action button', async () => {
   s._kbdFocusOnButton = false;
   s.selectNextCard();
   if (s.selectedCard || !s._kbdFocusOnButton) throw new Error('стрелка подняла красную карту');
+
+  const duringDealButton = { disabled: false, textContent: '', dataset: {}, classList: classList() };
+  const duringDeal = Object.create(GameSession.prototype);
+  Object.assign(duringDeal, {
+    app: { accordionPlayer: { cards: [] } },
+    actionBtn: duringDealButton,
+    round: { phase: 'END' },
+    _kbdFocusOnButton: true,
+  });
+  duringDeal._updateButton();
+  if (duringDeal._kbdFocusOnButton || duringDealButton.classList.values.has('kbd-focus')) {
+    throw new Error('фокус остался на disabled кнопке во время дораздачи');
+  }
 });
 
 await step('first-run settings match requested defaults', async () => {
