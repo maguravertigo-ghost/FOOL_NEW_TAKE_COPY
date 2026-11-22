@@ -2076,6 +2076,10 @@ switch (action.type) {
     }
   }
 
+  _isKeyboardPlayableCard(card) {
+    return !!card && this._getCardLegalSlots(card).length > 0;
+  }
+
   _cycleHandCard(dir) {
     if (this._gameOverPending) return;
     if (this.round.move !== 'player' || this.round.phase === 'END') return;
@@ -2083,13 +2087,21 @@ switch (action.type) {
     if (this._slotFocusIdx >= 0) return;
     const cards = this.app.accordionPlayer.cards;
 
+    // Не полагаемся на кэш красных оверлеев: сначала проверяем реальные ходы.
+    // Если их нет, любое горизонтальное движение оставляет курсор на кнопке.
+    if (cards.length && !cards.some(card => this._isKeyboardPlayableCard(card))) {
+      if (this.selectedCard) this._deselect();
+      if (this._canFocusActionButton()) this._focusActionButton();
+      return;
+    }
+
     // Фокус на кнопке — стрелка ведёт обратно к картам,
     // пропуская заблокированные.
     if (this._kbdFocusOnButton) {
       this._clearKbdFocus();
       if (!cards.length) return;
       let idx = dir > 0 ? 0 : cards.length - 1;
-      while (idx >= 0 && idx < cards.length && this.blockedCards.has(cards[idx])) {
+      while (idx >= 0 && idx < cards.length && !this._isKeyboardPlayableCard(cards[idx])) {
         idx += dir;
       }
       if (idx < 0 || idx >= cards.length) {
@@ -2107,11 +2119,12 @@ switch (action.type) {
       return;
     }
 
+    if (this.selectedCard && !this._isKeyboardPlayableCard(this.selectedCard)) this._deselect();
     const currentIdx = cards.indexOf(this.selectedCard);
     if (currentIdx < 0) {
       // Первое нажатие в этом ходу — выбираем ближайшую НЕзаблокированную карту
       let idx = dir > 0 ? 0 : cards.length - 1;
-      while (idx >= 0 && idx < cards.length && this.blockedCards.has(cards[idx])) {
+      while (idx >= 0 && idx < cards.length && !this._isKeyboardPlayableCard(cards[idx])) {
         idx += dir;
       }
       if (idx < 0 || idx >= cards.length) {
@@ -2125,7 +2138,7 @@ switch (action.type) {
 
     // Ищем следующую НЕзаблокированную карту в направлении
     let i = currentIdx + dir;
-    while (i >= 0 && i < cards.length && this.blockedCards.has(cards[i])) {
+    while (i >= 0 && i < cards.length && !this._isKeyboardPlayableCard(cards[i])) {
       i += dir;
     }
 
@@ -2140,7 +2153,7 @@ switch (action.type) {
       // 2. Иначе wrap по кругу внутри руки
       //    (ищем первую легальную карту с противоположного края)
       let j = dir > 0 ? 0 : cards.length - 1;
-      while (j >= 0 && j < cards.length && this.blockedCards.has(cards[j])) {
+      while (j >= 0 && j < cards.length && !this._isKeyboardPlayableCard(cards[j])) {
         j += dir;
       }
       if (j < 0 || j >= cards.length) return;  // все заблокированы
@@ -2183,17 +2196,24 @@ switch (action.type) {
     this._clearKbdFocus();
 
     const cards = this.app.accordionPlayer.cards;
-    if (!cards.length) return;
+    if (!cards.length) {
+      this._focusActionButton();
+      return;
+    }
 
     // Куда вернуться: на карту, где был фокус до кнопки.
     // Если она стала заблокирована / ушла — на первую доступную.
     let target = this._kbdReturnCard;
-    if (!target || !cards.includes(target) || this.blockedCards.has(target)) {
-      target = null;
-      for (const c of cards) {
-        if (!this.blockedCards.has(c)) { target = c; break; }
-      }
-      if (!target) target = cards[0];
+    const isPlayable = (card) => !!card && this._getCardLegalSlots(card).length > 0;
+    if (!cards.includes(target) || !isPlayable(target)) {
+      target = cards.find(isPlayable) || null;
+    }
+
+    // Если ходов нет, не приподнимаем красную/заблокированную карту.
+    // Клавиатурный фокус остаётся на кнопке действия игрока.
+    if (!target) {
+      this._focusActionButton();
+      return;
     }
 
     this._selectCard(target, { kbd: true, silent: true });
@@ -2833,12 +2853,12 @@ _maybeAutoFocusFirstCard() {
 
   // Первая доступная для хода карта — слева-направо
   // (cards упорядочены по слотам: чем меньше index, тем левее)
-  for (const c of cards) {
-    if (!this.blockedCards.has(c)) {
-      this._selectCard(c, { kbd: true, silent: true });
-      return;
+    for (const c of cards) {
+      if (this._isKeyboardPlayableCard(c)) {
+        this._selectCard(c, { kbd: true, silent: true });
+        return;
+      }
     }
-  }
   // Все карты заблокированы → сработает _maybeAutoFocusOnButton
 }
 
@@ -2859,7 +2879,7 @@ _maybeAutoFocusOnButton() {
     this._focusActionButton();
     return;
   }
-  if (!cards.every(c => this.blockedCards.has(c))) return;
+  if (cards.some(card => this._isKeyboardPlayableCard(card))) return;
 
   this._focusActionButton();
 }

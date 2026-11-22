@@ -123,6 +123,36 @@ await step('DOMContentLoaded -> App', async () => {
 const app = window.__app;
 const { GameSettings: defaultsUnderTest } = await import('file://' + path.join(ROOT, 'js/game/settings.js'));
 const { Progress: progressUnderTest } = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+await step('blocked hand stays on the player action button', async () => {
+  const { GameSession } = await import('file://' + path.join(ROOT, 'js/game/game_session.js'));
+  const classList = () => ({
+    values: new Set(),
+    add(v) { this.values.add(v); },
+    remove(v) { this.values.delete(v); },
+    toggle(v, on) { on ? this.values.add(v) : this.values.delete(v); },
+  });
+  const redCard = { el: { classList: classList() } };
+  const actionBtn = { disabled: false, classList: classList() };
+  const s = Object.create(GameSession.prototype);
+  Object.assign(s, {
+    app: { accordionPlayer: { cards: [redCard] } },
+    actionBtn, round: { move: 'player', phase: 'A_START' },
+    _gameOverPending: false, _slotFocusIdx: -1,
+    _kbdFocusOnButton: true, _kbdReturnCard: redCard,
+    _lastCycledCard: redCard, selectedCard: null,
+    blockedCards: new Set([redCard]),
+    _getCardLegalSlots: () => [],
+  });
+  s._returnFromButtonToCard();
+  if (s.selectedCard || !s._kbdFocusOnButton || !actionBtn.classList.values.has('kbd-focus')) {
+    throw new Error('возврат с кнопки выбрал запрещённую карту вместо кнопки');
+  }
+  actionBtn.classList.remove('kbd-focus');
+  s._kbdFocusOnButton = false;
+  s.selectNextCard();
+  if (s.selectedCard || !s._kbdFocusOnButton) throw new Error('стрелка подняла красную карту');
+});
+
 await step('first-run settings match requested defaults', async () => {
   const actual = [defaultsUnderTest.sfxEnabled, defaultsUnderTest.musicEnabled,
     defaultsUnderTest.deckSize, defaultsUnderTest.handLayout, defaultsUnderTest.moveHints,
