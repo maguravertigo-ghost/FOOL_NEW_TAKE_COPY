@@ -1,0 +1,469 @@
+/* ---------- Кнопка-флаг языка в главном меню ---------- */
+.mm-corner--lang {
+  padding: 0 !important;
+  font-size: calc(22px * var(--ui));
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.is-mobile .mm-corner--lang {
+  font-size: calc(32px * var(--ui));
+}
+
+/* ---------- Оверлей выбора языка ---------- */
+.mm-overlay__box--lang {
+  width: min(calc(560px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+}
+.mm-langs {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12px * var(--ui));
+}
+.mm-lang {
+  display: flex;
+  align-items: center;
+  gap: calc(16px * var(--ui));
+  padding: calc(14px * var(--ui)) calc(24px * var(--ui));
+  font: 700 calc(18px * var(--ui)) system-ui, sans-serif;
+  letter-spacing: calc(2px * var(--ui));
+  color: #fff;
+  background: #2b2b30;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: calc(10px * var(--ui));
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.mm-lang:hover { background: #3a3a42; }
+.mm-lang--active {
+  background: #2e7d32;
+  border-color: #4caf50;
+}
+.mm-lang__flag {
+  font-size: calc(32px * var(--ui));
+  line-height: 1;
+}
+.mm-lang__name {
+  flex: 1 1 auto;
+  text-align: left;
+}
+body.is-mobile .mm-lang {
+  font-size: calc(24px * var(--ui));
+  padding: calc(18px * var(--ui)) calc(28px * var(--ui));
+}
+body.is-mobile .mm-lang__flag { font-size: calc(44px * var(--ui)); }
+
+.lang-flag {
+  display: inline-block;
+  width: 1.2em;
+  height: auto;
+  vertical-align: middle;
+  border-radius: 2px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.4);
+}
+.mm-corner--lang .lang-flag {
+  width: 60%;
+}
+.mm-lang__flag .lang-flag {
+  width: 32px;
+  height: auto;
+}
+body.is-mobile .mm-lang__flag .lang-flag {
+  width: 44px;
+}
+
+body.is-mobile .coin-toss-coin,
+body.is-mobile .coin-toss-token,
+body.is-mobile .fool-token-scene,
+body.is-mobile .joker__img,
+body.is-mobile .shop-joker-wrap img {
+  filter: none !important; /* Убираем drop-shadow */
+}
+
+/* Принудительно делаем активный таб зеленым на мобилке */
+body.is-mobile .mm-tab--active {
+  background: #2e7d32 !important;
+  border-color: #4caf50 !important;
+  color: #fff !important;
+}
+.mm-corner--achieve {
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.mm-corner--achieve > img {
+  display: block;
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.mm-overlay__box--achievements {
+  width: min(calc(900px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+  max-height: calc(100% - calc(60px * var(--ui)));
+}
+
+.mm-achieve-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10px * var(--ui));
+}
+
+.mm-achieve-title__star {
+  width: calc(24px * var(--ui));
+  height: calc(24px * var(--ui));
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(255, 213, 79, 0.6));
+}
+
+/* Сетка: 5 колонок × 2 ряда на ПК */
+.mm-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: calc(16px * var(--ui));
+  padding: calc(8px * var(--ui)) 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.mm-achievement {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  padding: 0;
+  border-radius: calc(12px * var(--ui));
+  border: calc(2px * var(--ui)) solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.mm-achievement:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mm-achievement__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mm-achievement--open .mm-achievement__img {
+  filter: drop-shadow(0 calc(2px * var(--ui)) calc(6px * var(--ui)) rgba(0, 0, 0, 0.5));
+}
+
+.mm-achievement--locked {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* --- Оверлей с описанием --- */
+.mm-achieve-detail {
+  display: flex;
+  flex-direction: row;
+  width: min(calc(780px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-height: calc(100% - calc(40px * var(--ui)));
+  padding: calc(24px * var(--ui));
+  background: rgba(25, 25, 30, 0.98);
+  border: 2px solid #444;
+  border-radius: calc(14px * var(--ui));
+  box-shadow: 0 calc(14px * var(--ui)) calc(44px * var(--ui)) rgba(0, 0, 0, 0.6);
+  gap: calc(20px * var(--ui));
+  box-sizing: border-box;
+  animation: mm-fade-in 0.15s ease;
+}
+
+.mm-achieve-detail__img-wrap {
+  flex: 0 0 auto;
+  width: calc(260px * var(--ui));
+  height: calc(260px * var(--ui));
+  border: calc(2px * var(--ui)) solid rgba(255, 255, 255, 0.15);
+  border-radius: calc(12px * var(--ui));
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.mm-achieve-detail__img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mm-achieve-detail__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--ui));
+  min-height: 0;
+  overflow: hidden;
+}
+.mm-achieve-detail__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--ui));
+  min-width: 0;
+}
+
+.mm-achieve-detail__title {
+  font-size: calc(26px * var(--ui));
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: calc(1px * var(--ui));
+  line-height: 1.2;
+}
+
+.mm-achieve-detail__sep {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.mm-achieve-detail__desc {
+  flex: 1 1 auto;
+  color: #ccc;
+  font-size: calc(16px * var(--ui));
+  line-height: 1.55;
+  overflow-y: auto;
+}
+
+.mm-achieve-detail__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: calc(8px * var(--ui));
+}
+
+/* Мобилка: окно 85%, две колонки, текст по центру, кнопка с отступом */
+body.is-mobile .mm-achieve-detail {
+  width: 85%;
+  max-width: 85%;
+  max-height: 85%;
+  height: auto;
+  /* Отступ со всех сторон = 5% от ширины экрана */
+  padding: 5vw;
+  flex-direction: row;
+  gap: 5vw;                 /* тот же принцип для gap между колонками */
+  box-sizing: border-box;
+}
+
+body.is-mobile .mm-achieve-detail__img-wrap {
+  flex: 0 0 auto;
+  width: 50%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  align-self: center;                       /* по центру по высоте */
+  border-radius: calc(10px * var(--ui));
+  overflow: hidden;
+}
+
+body.is-mobile .mm-achieve-detail__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;                                   /* gap через body/footer */
+}
+
+/* Тело — центрируется по вертикали между top и footer */
+body.is-mobile .mm-achieve-detail__body {
+  margin: auto 0;
+  gap: calc(8px * var(--ui));
+}
+
+body.is-mobile .mm-achieve-detail__title {
+  font-size: max(16px, calc(19px * var(--ui)));
+  line-height: 1.2;
+}
+
+body.is-mobile .mm-achieve-detail__desc {
+  font-size: max(13px, calc(15px * var(--ui)));
+  line-height: 1.45;
+  overflow-y: auto;
+  max-height: 40vh;
+}
+
+/* Кнопка ОК — прижата внизу, но с отступом от края */
+body.is-mobile .mm-achieve-detail__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+body.is-mobile .mm-achieve-detail__footer .mm-btn {
+  font-size: max(13px, calc(15px * var(--ui))) !important;
+  padding: max(6px, calc(8px * var(--ui))) max(18px, calc(24px * var(--ui))) !important;
+  min-width: calc(100px * var(--ui));
+}
+
+body.is-mobile .mm-overlay__box--achievements {
+  width: 90%;
+  max-width: 90%;
+  max-height: calc(100% - calc(16px * var(--ui)));
+  padding: calc(14px * var(--ui));
+  gap: calc(10px * var(--ui));
+  box-sizing: border-box;
+}
+
+body.is-mobile .mm-achieve-title {
+  font-size: max(16px, calc(20px * var(--ui)));   /* было 20/26 — уменьшили */
+  gap: calc(8px * var(--ui));
+}
+
+body.is-mobile .mm-achieve-title__star {
+  width: max(18px, calc(22px * var(--ui)));       /* пропорционально */
+  height: max(18px, calc(22px * var(--ui)));
+}
+
+/* Кнопка "В МЕНЮ" — крупнее, по центру */
+body.is-mobile .mm-overlay__box--achievements > [data-close] {
+  align-self: center;
+  font-size: max(15px, calc(18px * var(--ui))) !important;
+  padding: max(8px, calc(10px * var(--ui))) max(28px, calc(36px * var(--ui))) !important;
+  min-width: calc(160px * var(--ui));
+  min-height: max(38px, calc(44px * var(--ui)));
+  height: auto;
+  margin-top: calc(4px * var(--ui));
+}
+body.is-mobile .mm-overlay__box--achievements {
+  /* уже есть — но убедимся, что flex-цепочка держит сетку */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.is-mobile .mm-achievements-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: max(4px, calc(6px * var(--ui)));
+  padding: max(2px, calc(4px * var(--ui))) 0;
+  align-content: stretch;
+  overflow: hidden;       /* скролла нет */
+}
+
+body.is-mobile .mm-achievement {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;     /* ← снимаем квадрат */
+  border-radius: calc(8px * var(--ui));
+  border-width: 1px;
+}
+
+body.is-mobile .mm-achieve-detail__icon img {
+  width: max(72px, calc(96px * var(--ui)));
+  height: max(72px, calc(96px * var(--ui)));
+}
+
+/* === Баннер достижения === */
+.ach-banner {
+  position: absolute;
+  top: calc(16px * var(--ui));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(14px * var(--ui));
+  padding: calc(10px * var(--ui)) calc(20px * var(--ui));
+  background: rgba(25, 25, 30, 0.97);
+  border-radius: calc(12px * var(--ui));
+  border: calc(4px * var(--ui)) solid #ff9800;
+  box-shadow:
+    0 calc(8px * var(--ui)) calc(24px * var(--ui)) rgba(0, 0, 0, 0.6),
+    0 0 calc(32px * var(--ui)) rgba(255, 152, 0, 0.55);
+  z-index: 2;
+  pointer-events: none;
+  animation: ach-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ach-in {
+  from { opacity: 0; transform: translate(-50%, -30px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.ach-banner__img {
+  width: calc(56px * var(--ui));
+  height: calc(56px * var(--ui));
+  object-fit: contain;
+  filter: drop-shadow(0 0 calc(6px * var(--ui)) rgba(255, 183, 77, 0.6));
+  flex-shrink: 0;
+}
+
+.ach-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2px * var(--ui));
+  min-width: 0;
+}
+
+.ach-banner__label {
+  font-size: calc(11px * var(--ui));
+  color: #ffb74d;
+  letter-spacing: calc(2px * var(--ui));
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ach-banner__title {
+  font-size: calc(16px * var(--ui));
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Плавающий вариант (в меню, z-index выше) */
+.ach-banner--floating {
+  position: fixed;
+  top: calc(20px * var(--ui));
+  z-index: 2000;   /* выше меню (z-index 500), выше fade (900) */
+}
+
+.ach-banner--out {
+  animation: ach-out 0.55s ease forwards;
+}
+
+@keyframes ach-out {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to   { opacity: 0; transform: translate(-50%, -40px); }
+}
+
+/* Мобилка */
+body.is-mobile .ach-banner {
+  padding: max(8px, calc(10px * var(--ui))) max(14px, calc(20px * var(--ui)));
+  gap: max(10px, calc(12px * var(--ui)));
+  top: max(10px, calc(12px * var(--ui)));
+  max-width: calc(100% - calc(24px * var(--ui)));
+  border-width: calc(3px * var(--ui));
+}
+body.is-mobile .ach-banner__img {
+  width: max(44px, calc(56px * var(--ui)));
+  height: max(44px, calc(56px * var(--ui)));
+}
+body.is-mobile .ach-banner__label {
+  font-size: max(10px, calc(12px * var(--ui)));
+}
+body.is-mobile .ach-banner__title {
+  font-size: max(14px, calc(16px * var(--ui)));
+  white-space: normal;
+}
+body.is-mobile .ach-banner--floating {
+  top: max(14px, calc(20px * var(--ui)));
+}

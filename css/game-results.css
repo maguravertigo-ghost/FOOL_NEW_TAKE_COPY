@@ -1,0 +1,248 @@
+/* ==================================================================
+   ОКНО РЕЗУЛЬТАТОВ (Мобилка — по референсу)
+   ================================================================== */
+
+/* Окно результатов (Желтый прямоугольник) */
+body.is-mobile .game-over__box {
+  width: calc(var(--scene-w) * 0.75);   /* 75% ширины сцены */
+  height: calc(var(--scene-h) * 0.65);  /* 65% высоты сцены */
+  max-width: none;
+  max-height: none;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  /* Центрирование обеспечивает родитель #game-over */
+}
+
+/* Левый блок (Серый фон + Джокер) */
+body.is-mobile .game-over__joker {
+  flex: 0 0 auto; /* Ширина подстраивается под картинку */
+  height: 100%;
+  background: #2a2a2e; /* Серый фон */
+  position: relative;
+  display: flex;
+  align-items: center; /* Вертикальное центрирование */
+  justify-content: flex-start; /* Прижимаем к левому краю */
+}
+
+/* Картинка джокера */
+body.is-mobile .game-over__joker img {
+  display: block;
+  height: 100%; /* Вписываем по высоте окна */
+  width: auto;  /* Ширина подстраивается автоматически */
+  max-width: none;
+  object-fit: contain;
+}
+
+/* Правый блок (Текст и кнопки) */
+body.is-mobile .game-over__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Центрируем контент по вертикали */
+  padding: calc(10px * var(--ui));
+  gap: calc(8px * var(--ui));
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* Настройка размеров шрифтов */
+body.is-mobile .game-over__title { 
+  font-size: calc(48px * var(--ui));   /* Чуть крупнее (Победа/Ничья/Поражение/Погоны) */
+  margin-bottom: calc(6px * var(--ui)); 
+}
+body.is-mobile .game-over__sub { 
+  font-size: calc(24px * var(--ui)); 
+  margin-bottom: calc(6px * var(--ui)); 
+}
+body.is-mobile .game-over__epi { 
+  font-size: calc(26px * var(--ui));   /* Размер заголовка для погон */
+  line-height: 1.2;
+  margin-top: calc(4px * var(--ui));
+}
+body.is-mobile .game-over__epi b { 
+  font-size: calc(30px * var(--ui)); 
+}
+body.is-mobile .game-over__points { 
+  font-size: calc(22px * var(--ui));   /* "Получено очков стиля" — меньше кнопок */
+}
+body.is-mobile .game-over__points b { 
+  font-size: calc(28px * var(--ui)); 
+}
+
+/* Кнопки */
+body.is-mobile .game-over__content .pause-btn {
+  font-size: calc(22px * var(--ui));
+  padding: calc(16px * var(--ui)) calc(20px * var(--ui)); 
+  width: 95%;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+body.is-mobile .game-over__content .pause-btn--ad {
+  font-size: calc(20px * var(--ui));   /* Было 16px — увеличил текст рекламы */
+  padding: calc(14px * var(--ui)) calc(16px * var(--ui));
+}
+/* Убираем стандартный фокус браузера на кнопках в окне результатов (мобилка) */
+body.is-mobile .game-over__box button:focus {
+  outline: none;
+}
+
+/* ================================================================
+   ЦВЕТОВОЙ КОД КНОПКИ ИГРОКА
+   ================================================================ */
+
+/* info — «МОЙ ХОД», игрок не может нажать, но знает что делать */
+#action-btn[data-state="info"]:disabled {
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    rgba(63,163,74,0.75) 0%,
+    rgba(46,125,50,0.75) 55%,
+    rgba(27,94,32,0.75) 100%
+  );
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+/* wait — «...», кнопка неактивна, почти прозрачна */
+#action-btn[data-state="wait"]:disabled {
+  color: rgba(255,255,255,0.5);
+  background: rgba(30,30,30,0.4);
+  border-color: rgba(0,0,0,0.3);
+  text-shadow: none;
+  box-shadow: none;
+}
+
+/* pass — ПАС, зелёная (безопасное действие) */
+#action-btn[data-state="pass"] {
+  color: #fff;
+  background: linear-gradient(180deg, #4ab854 0%, #2e7d32 55%, #1b5e20 100%);
+  border-color: #0d3b12;
+  text-shadow:
+    -1px -1px 0 #0d3b12, 1px -1px 0 #0d3b12,
+    -1px  1px 0 #0d3b12, 1px  1px 0 #0d3b12,
+    0 2px 4px rgba(0,0,0,0.8);
+  box-shadow:
+    0 4px 0 #0a2e10,
+    0 6px 10px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* take — БЕРУ, красная (внимание: забираешь карты) */
+#action-btn[data-state="take"] {
+  color: #fff;
+  background: linear-gradient(180deg, #e53935 0%, #c62828 55%, #8e0000 100%);
+  border-color: #5a0000;
+  text-shadow:
+    -1px -1px 0 #4a0000, 1px -1px 0 #4a0000,
+    -1px  1px 0 #4a0000, 1px  1px 0 #4a0000,
+    0 2px 4px rgba(0,0,0,0.8);
+  box-shadow:
+    0 4px 0 #4a0000,
+    0 6px 10px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* pogony — ПОГОНЫ!, жёлтая + пульсация (важное событие) */
+#action-btn[data-state="pogony"] {
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #ffd54f 0%, #ff9800 55%, #e65100 100%);
+  border-color: #8f4300;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  animation: btn-pogony-glow 1.4s ease-in-out infinite;
+}
+
+/* vsyo — ВСЁ!, тоже жёлтая + пульсация */
+#action-btn[data-state="vsyo"] {
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #ffd54f 0%, #ff9800 55%, #e65100 100%);
+  border-color: #8f4300;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  animation: btn-pogony-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes btn-pogony-glow {
+  0%, 100% {
+    box-shadow:
+      0 4px 0 #4a2000,
+      0 6px 10px rgba(0,0,0,0.5),
+      0 0 18px rgba(255,213,79,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  50% {
+    box-shadow:
+      0 4px 0 #4a2000,
+      0 6px 10px rgba(0,0,0,0.5),
+      0 0 36px rgba(255,213,79,1.0),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+}
+
+/* ================================================================
+   ФИНАЛЬНЫЕ СОСТОЯНИЯ КНОПКИ (после матча)
+   ================================================================ */
+
+/* win — ПОБЕДА / ПОГОНЫ / ВСЁ, оранжевый (как очки стиля) */
+#action-btn[data-state="win"] {
+  color: #fff;
+  background: linear-gradient(180deg, #ffa726 0%, #ff9800 55%, #e65100 100%);
+  border-color: #8f4300;
+  text-shadow:
+    -1px -1px 0 #4a2000, 1px -1px 0 #4a2000,
+    -1px  1px 0 #4a2000, 1px  1px 0 #4a2000,
+    0 2px 4px rgba(0,0,0,0.8);
+  box-shadow:
+    0 4px 0 #4a2000,
+    0 6px 10px rgba(0,0,0,0.5),
+    0 0 24px rgba(255,152,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  animation: btn-win-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes btn-win-glow {
+  0%, 100% {
+    box-shadow:
+      0 4px 0 #4a2000,
+      0 6px 10px rgba(0,0,0,0.5),
+      0 0 20px rgba(255,152,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  50% {
+    box-shadow:
+      0 4px 0 #4a2000,
+      0 6px 10px rgba(0,0,0,0.5),
+      0 0 44px rgba(255,152,0,1.0),
+      inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+}
+
+/* lose — ПРОИГРАЛ, красный (как БЕРУ) */
+#action-btn[data-state="lose"] {
+  color: #fff;
+  background: linear-gradient(180deg, #e53935 0%, #c62828 55%, #8e0000 100%);
+  border-color: #5a0000;
+  text-shadow:
+    -1px -1px 0 #4a0000, 1px -1px 0 #4a0000,
+    -1px  1px 0 #4a0000, 1px  1px 0 #4a0000,
+    0 2px 4px rgba(0,0,0,0.8);
+  box-shadow:
+    0 4px 0 #4a0000,
+    0 6px 10px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* draw — НИЧЬЯ, нейтральный серо-синий */
+#action-btn[data-state="draw"] {
+  color: #fff;
+  background: linear-gradient(180deg, #607d8b 0%, #455a64 55%, #263238 100%);
+  border-color: #1c2a30;
+  text-shadow:
+    -1px -1px 0 #1c2a30, 1px -1px 0 #1c2a30,
+    -1px  1px 0 #1c2a30, 1px  1px 0 #1c2a30,
+    0 2px 4px rgba(0,0,0,0.8);
+  box-shadow:
+    0 4px 0 #1c2a30,
+    0 6px 10px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
