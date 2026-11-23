@@ -189,7 +189,7 @@ _rebuildFace() {
    * ================================================================ */
 
   prepareFaceForFlip() {
-    if (!window.__devPrepaintFaces || this._devFacePrepared) return;
+    if (window.__devPrepaintFaces === false || this._devFacePrepared) return;
     this._devFacePrepared = true;
     const started = performance.now();
     this.setFaceUp(this.faceUp);

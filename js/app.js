@@ -437,7 +437,7 @@ setLang(savedLang || sdkLang, { persist: false });
 _createDevTools() {
   if (!DEV_MODE) return;
   window.__gameProfiler = performanceProfiler;
-  if (window.__devPrepaintFaces === undefined) window.__devPrepaintFaces = false;
+  if (window.__devPrepaintFaces === undefined) window.__devPrepaintFaces = true;
 
   const wrap = document.createElement('div');
   wrap.id = 'dev-tools';
@@ -529,8 +529,8 @@ _createDevTools() {
   });
   wrap.appendChild(eyeBtn);
 
-  let prepaintOn = false;
-  const prepaintBtn = mkBtn('PREPAINT NEXT: OFF', '#37474f', '#78909c', () => {
+  let prepaintOn = true;
+  const prepaintBtn = mkBtn('PREPAINT NEXT: ON', '#00838f', '#78909c', () => {
     prepaintOn = !prepaintOn;
     window.__devPrepaintFaces = prepaintOn;
     prepaintBtn.textContent = `PREPAINT NEXT: ${prepaintOn ? 'ON' : 'OFF'}`;
