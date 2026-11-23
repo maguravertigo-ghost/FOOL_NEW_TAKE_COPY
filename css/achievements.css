@@ -172,6 +172,15 @@ body.is-mobile .mm-tab--active {
 }
 
 /* --- Оверлей с описанием --- */
+.msg-overlay--achievement-detail {
+  height: 100vh;
+  bottom: auto;
+}
+@supports (height: 100dvh) {
+  .msg-overlay--achievement-detail {
+    height: 100dvh;
+  }
+}
 .mm-achieve-detail {
   display: flex;
   flex-direction: row;
@@ -249,25 +258,38 @@ body.is-mobile .mm-tab--active {
 
 /* Мобилка: окно 85%, две колонки, текст по центру, кнопка с отступом */
 body.is-mobile .mm-achieve-detail {
-  width: 85%;
-  max-width: 85%;
-  max-height: 85%;
+  width: 92vw;
+  max-width: 92vw;
+  max-height: calc(100vh - 16px);
   height: auto;
-  /* Отступ со всех сторон = 5% от ширины экрана */
-  padding: 5vw;
+  padding: min(5vw, 4vh);
   flex-direction: row;
-  gap: 5vw;                 /* тот же принцип для gap между колонками */
+  gap: min(5vw, 3vh);
+  overflow: hidden;
   box-sizing: border-box;
+}
+@supports (height: 100dvh) {
+  body.is-mobile .mm-achieve-detail {
+    max-height: calc(100dvh - 16px);
+    padding: min(5vw, 4dvh);
+    gap: min(5vw, 3dvh);
+  }
 }
 
 body.is-mobile .mm-achieve-detail__img-wrap {
   flex: 0 0 auto;
-  width: 50%;
-  height: auto;
+  width: min(38vw, 40vh);
+  height: min(38vw, 40vh);
   aspect-ratio: 1 / 1;
-  align-self: center;                       /* по центру по высоте */
+  align-self: center;
   border-radius: calc(10px * var(--ui));
   overflow: hidden;
+}
+@supports (height: 100dvh) {
+  body.is-mobile .mm-achieve-detail__img-wrap {
+    width: min(38vw, 40dvh);
+    height: min(38vw, 40dvh);
+  }
 }
 
 body.is-mobile .mm-achieve-detail__content {
@@ -393,6 +415,43 @@ body.is-mobile .mm-achieve-detail__icon img {
 @keyframes ach-in {
   from { opacity: 0; transform: translate(-50%, -30px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.ach-banner-group {
+  position: absolute;
+  z-index: 2;
+  top: calc(16px * var(--ui));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12px * var(--ui));
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+}
+.ach-banner--grouped {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  min-width: 0;
+  max-width: 50%;
+  animation-name: ach-group-in;
+  animation-duration: 0.45s;
+  animation-fill-mode: both;
+}
+@keyframes ach-group-in {
+  from { opacity: 0; transform: translateY(-24px) scale(.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (max-width: 600px) {
+  .ach-banner-group { gap: 6px; top: 8px; }
+  .ach-banner--grouped { padding: 7px 8px; gap: 6px; border-width: 2px; }
+  .ach-banner--grouped .ach-banner__img { width: 34px; height: 34px; }
+  .ach-banner--grouped .ach-banner__title { font-size: 11px; line-height: 1.1; }
+  .ach-banner--grouped .ach-banner__label { font-size: 9px; }
 }
 
 .ach-banner__img {

@@ -3,6 +3,17 @@ const LS_KEY = 'fool_progress';
 const ORDER_36 = ['6','7','8','9','10','J','Q','K','A'];
 const ORDER_52 = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
+export const QUEST_STAGES = [
+  { deckSize: 36, minPogons: 1, order: ORDER_36 },
+  { deckSize: 52, minPogons: 1, order: ORDER_52 },
+  { deckSize: 36, minPogons: 2, order: ORDER_36 },
+  { deckSize: 52, minPogons: 2, order: ORDER_52 },
+  { deckSize: 36, minPogons: 3, order: ORDER_36 },
+  { deckSize: 52, minPogons: 3, order: ORDER_52 },
+  { deckSize: 36, minPogons: 4, order: ORDER_36 },
+  { deckSize: 52, minPogons: 4, order: ORDER_52 },
+];
+
 function defaultState() {
   const quests = {};
   for (const r of ORDER_52) quests[r] = { progress: 0, claimed: 0 };
@@ -17,6 +28,7 @@ function defaultState() {
 	giftGiven: false,
 	tempItems: null,
 	trialUnlocked: false,
+	questStage: 0,
 	achievements: {},     // { [id]: { unlockedAt: timestamp } }
 	
     pendingAchievements: [],   // ← ДОБАВИТЬ
@@ -54,7 +66,10 @@ function load() {
 	  seenStyleItems: p.seenStyleItems ?? {},
 	  giftGiven: p.giftGiven ?? false,
 	  tempItems: p.tempItems ?? null,
-	  trialUnlocked: p.trialUnlocked ?? false,   // ← ДОБАВИТЬ
+	  trialUnlocked: p.trialUnlocked ?? false,
+	  questStage: Number.isInteger(p.questStage)
+        ? Math.max(0, Math.min(QUEST_STAGES.length - 1, p.questStage))
+        : (p.trialUnlocked ? 1 : 0),
 	  streak:        p.streak || { level: 1, wins: 0, losses: 0 },   // ← ДОБАВИТЬ
 	  achievements: p.achievements || {},
 	  
@@ -114,20 +129,28 @@ export function isTestModeUnlocked() {
   return Progress.trialUnlocked === true;
 }
 
+/** Current challenge branch: 36/52 cards with a minimum pogon count. */
+export function currentQuestStage() {
+  const index = Math.max(0, Math.min(QUEST_STAGES.length - 1, Progress.questStage || 0));
+  return { index, ...QUEST_STAGES[index] };
+}
+
 /** Текущий активный порядок квестов. */
 export function activeOrder() {
-  return isTestModeUnlocked() ? ORDER_52 : ORDER_36;
+  return currentQuestStage().order;
 }
 
 /** Может ли текущий игровой ранг идти в зачёт квеста?
  *  Нелинейный режим: любой ранг из активного списка засчитывается независимо от прогресса других. */
-function canCredit(rank) {
-  return activeOrder().includes(rank);
+function canCredit(rank, deckSize) {
+  const stage = currentQuestStage();
+  return stage.order.includes(rank) && Number(deckSize) === stage.deckSize;
 }
 
-export function creditQuest(rank, count) {
-  if (count < 1) return null;
-  if (!canCredit(rank)) return null;
+export function creditQuest(rank, count, deckSize) {
+  const stage = currentQuestStage();
+  if (count < stage.minPogons) return null;
+  if (!canCredit(rank, deckSize)) return null;
   const q = Progress.quests[rank];
   if (!q) return null;
   // Прогресс = максимум из текущего и числа выброшенных карт этого ранга (от 1 до 4)
@@ -143,12 +166,13 @@ export function claimableRanks() {
   const out = [];
   for (const r of order) {
     const q = Progress.quests[r];
-    if (q.progress >= 1 && q.claimed < q.progress) out.push(r);
+    if (q.progress >= currentQuestStage().minPogons && q.claimed < q.progress) out.push(r);
   }
   return out;
 }
 
 export function claimQuestReward() {
+  const stageBefore = currentQuestStage();
   const ranks = claimableRanks();
   let total = 0;
   for (const r of ranks) {
@@ -156,24 +180,41 @@ export function claimQuestReward() {
     total += 250 + 50 * q.progress;
     q.claimed = q.progress;
   }
-  if (total > 0) {
-    Progress.stylePoints += total;
-  }
+  if (total > 0) Progress.stylePoints += total;
 
-  // Проверяем: все ли 36 квестов Классики получены?
-  // Если да — открываем Испытание (52 карты).
-  if (!Progress.trialUnlocked) {
-    const allClassicClaimed = ORDER_36.every(r => {
-      const q = Progress.quests[r];
-      return q && q.progress >= 1 && q.claimed >= q.progress;
-    });
-    if (allClassicClaimed) {
+  const allRanksClaimed = stageBefore.order.every((r) => {
+    const q = Progress.quests[r];
+    return q && q.progress >= stageBefore.minPogons && q.claimed >= q.progress;
+  });
+
+  // Achievements for the original 36/52 branches are awarded on claim, not
+  // when the match ends. Advanced branches intentionally have no achievements.
+  const newlyUnlocked = [];
+  const all36Claimed = ORDER_36.every((r) => {
+    const q = Progress.quests[r]; return q && q.progress >= 1 && q.claimed >= q.progress;
+  });
+  const all52Claimed = ORDER_52.every((r) => {
+    const q = Progress.quests[r]; return q && q.progress >= 1 && q.claimed >= q.progress;
+  });
+  if (stageBefore.minPogons === 1 && all36Claimed && unlockAchievement('quest_36')) newlyUnlocked.push('quest_36');
+  if (stageBefore.minPogons === 1 && all52Claimed && unlockAchievement('quest_52')) newlyUnlocked.push('quest_52');
+
+  let trialUnlockedNow = false;
+  let nextStage = stageBefore.index;
+  if (allRanksClaimed && stageBefore.index < QUEST_STAGES.length - 1) {
+    nextStage = stageBefore.index + 1;
+    Progress.questStage = nextStage;
+    if (stageBefore.index === 0 && !Progress.trialUnlocked) {
       Progress.trialUnlocked = true;
+      trialUnlockedNow = true;
     }
+    for (const r of ORDER_52) Progress.quests[r] = { progress: 0, claimed: 0 };
   }
 
   saveProgress();
-  return { total, ranks };
+  return { total, ranks, newlyUnlocked, stageCompleted: allRanksClaimed,
+    previousStage: stageBefore.index, nextStage, trialUnlockedNow,
+    progressionComplete: nextStage === QUEST_STAGES.length - 1 && allRanksClaimed };
 }
 
 export const AD_ITEMS = {
@@ -295,7 +336,8 @@ export function resetQuests() {
     Progress.quests[r] = { progress: 0, claimed: 0 };
   }
   Progress.stylePoints = 0;
-  Progress.trialUnlocked = false;   // ← сбрасываем и режим
+  Progress.trialUnlocked = false;
+  Progress.questStage = 0;
   saveProgress();
 }
 
@@ -326,8 +368,7 @@ export function resetAll() {
   Progress.giftGiven = false;
   Progress.tempItems = null;
   Progress.trialUnlocked = false;
-
-  Progress.trialUnlocked = false;
+  Progress.questStage = 0;
   Progress.streak = { level: 1, wins: 0, losses: 0 };   // ← ДОБАВИТЬ
   Progress.achievements = {};
   

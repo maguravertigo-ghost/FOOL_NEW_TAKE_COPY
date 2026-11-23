@@ -24,7 +24,7 @@ import { showMessage } from '../ui/message_overlay.js';
 import { t } from '../i18n/index.js';
 
 import { AchievementManager } from './achievements.js';
-import { createAchievementBanner } from '../ui/achievement_banner.js';
+import { createAchievementBannerGroup } from '../ui/achievement_banner.js';
 //import { addTotalEpaulettes } from './progress.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -78,6 +78,7 @@ export class GameSession {
 
     // колода — по настройкам
 	const deckSize = GameSettings.deckSize || 36;
+	this.deckSize = Number(deckSize);
 	this.deck = new Deck(String(deckSize)).shuffle();
 
     // статистика для погон/квестов
@@ -1181,7 +1182,7 @@ _showGameOver(winner, opts = {}) {
       const count = this._finishedCards.length;
 
       const wasCompleted = Progress.quests[rk] && Progress.quests[rk].progress >= 1;
-      const credited = creditQuest(rk, count);
+      const credited = creditQuest(rk, count, this.deckSize);
       if (credited && !wasCompleted) {
         questRank = credited;
       }
@@ -1274,7 +1275,7 @@ else                           this._jokerFrame('five');  // ничья
   let achBannerHTML = '';
   let achBannerNode = null;
   if (newlyUnlocked.length > 0) {
-    achBannerNode = createAchievementBanner(newlyUnlocked[0]);
+    achBannerNode = createAchievementBannerGroup(newlyUnlocked);
   }
 
   el.innerHTML = `<div class="game-over__box">

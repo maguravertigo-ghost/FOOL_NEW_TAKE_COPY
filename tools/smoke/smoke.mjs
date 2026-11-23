@@ -207,6 +207,60 @@ await step('first-run settings match requested defaults', async () => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`неожиданные defaults: ${JSON.stringify(actual)}`);
   if (!progressUnderTest.purchases.design.includes(3)) throw new Error('широкий дизайн по умолчанию не открыт');
 });
+
+await step('quest branches advance 36/52 then require exact minimum pogons', async () => {
+  const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+  const original = JSON.parse(JSON.stringify(progress.Progress));
+  try {
+    progress.Progress.questStage = 0;
+    progress.Progress.trialUnlocked = false;
+    progress.Progress.achievements = {};
+    for (const rank of Object.keys(progress.Progress.quests)) progress.Progress.quests[rank] = { progress: 0, claimed: 0 };
+    for (const rank of progress.activeOrder()) progress.creditQuest(rank, 1, 36);
+    const classic = progress.claimQuestReward();
+    if (progress.currentQuestStage().index !== 1 || !classic.trialUnlockedNow || !classic.newlyUnlocked.includes('quest_36')) throw new Error('classic branch did not unlock trial/achievement on claim');
+    for (const rank of progress.activeOrder()) progress.creditQuest(rank, 1, 52);
+    const trial = progress.claimQuestReward();
+    if (progress.currentQuestStage().index !== 2 || !trial.newlyUnlocked.includes('quest_52')) throw new Error('52-card branch did not unlock next stage');
+    progress.Progress.achievements = {};
+    const minTwoRank = progress.activeOrder()[0];
+    if (progress.creditQuest(minTwoRank, 1, 36) !== null) throw new Error('one pogon incorrectly counted in min-two branch');
+    for (const rank of progress.activeOrder()) progress.creditQuest(rank, 2, 36);
+    const minTwo = progress.claimQuestReward();
+    if (progress.currentQuestStage().index !== 3 || minTwo.newlyUnlocked.length) throw new Error('minimum-two branch progression/achievement behavior incorrect');
+    const minTwo52Rank = progress.activeOrder()[0];
+    if (progress.creditQuest(minTwo52Rank, 2, 36) !== null) throw new Error('wrong deck size counted in 52-card branch');
+    if (progress.creditQuest(minTwo52Rank, 2, 52) !== minTwo52Rank) throw new Error('two pogons were not credited to 52-card branch');
+  } finally {
+    for (const key of Object.keys(progress.Progress)) delete progress.Progress[key];
+    Object.assign(progress.Progress, original);
+    progress.saveProgress();
+  }
+});
+
+await step('achievement priority, exact pogon count and collector unlock', async () => {
+  const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+  const { AchievementManager, checkCollectorAchievement } = await import('file://' + path.join(ROOT, 'js/game/achievements.js'));
+  const { ASSETS } = await import('file://' + path.join(ROOT, 'js/assets.js'));
+  const original = JSON.parse(JSON.stringify(progress.Progress));
+  try {
+    progress.Progress.stats.wins = 1;
+    progress.Progress.achievements = {};
+    const firstAndThree = AchievementManager.check({ winner: 'player', pogonsThrown: 3 });
+    if (firstAndThree.join(',') !== 'first_win,pogon_3') throw new Error(`wrong achievement order: ${firstAndThree}`);
+    for (const id of ['pogon_1', 'pogon_2', 'pogon_4']) {
+      if (progress.isAchievementUnlocked(id)) throw new Error(`non-exact pogon achievement unlocked: ${id}`);
+    }
+    progress.Progress.purchases = Object.fromEntries([
+      ['shirt', ASSETS.shirts], ['table', ASSETS.tables], ['decor', ASSETS.decorations], ['suits', Array(6)], ['design', Array(6)],
+    ].map(([cat, items]) => [cat, items.map((_, i) => i)]));
+    if (!checkCollectorAchievement() || !progress.isAchievementUnlocked('collector')) throw new Error('collector did not unlock at full collection');
+  } finally {
+    for (const key of Object.keys(progress.Progress)) delete progress.Progress[key];
+    Object.assign(progress.Progress, original);
+    progress.saveProgress();
+  }
+});
 console.log('app создан:', !!app, '| меню в DOM:', !!document.querySelector('#main-menu, .mm-root, .menu'));
 
 const q = (s) => document.querySelector(s);

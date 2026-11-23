@@ -6,7 +6,7 @@ import { ASSETS, svgInstance } from '../assets.js';
 import { GameSettings, saveSettings } from '../game/settings.js';
 import {
     Progress, saveProgress, claimQuestReward, resetQuests,
-    activeOrder, isTestModeUnlocked,
+    activeOrder, currentQuestStage, QUEST_STAGES,
     PRICES, isPurchased, purchaseItem,
     claimableRanks,
     markStyleItemSeen, isStyleItemSeen, hasUnseenStyleItems,
@@ -32,6 +32,7 @@ import { Tutorial } from './tutorial.js';
 
 import { popPendingAchievement, peekPendingAchievement } from '../game/progress.js';
 import { showFloatingAchievement } from './achievement_banner.js';
+import { checkCollectorAchievement } from '../game/achievements.js';
 
 // Если SVG-файлы ещё не добавлены — используется эмодзи как fallback.
 // Как только появятся assets/flags/ru.svg (en.svg, tr.svg) — картинка
@@ -2000,6 +2001,7 @@ _confirmBuy(root, key) {
             
             audio.playSfx('buy');
             this._applyStyleItem(cat, item);
+            if (checkCollectorAchievement()) showFloatingAchievement('collector', 8000);
             this._refreshStats();
             this._renderShop(root, this._shopCategory);
             showMessage(t('shop.buy.adSuccess'), { title: t('shop.buy.adTitle') });
@@ -2030,6 +2032,7 @@ showConfirm(
 		  }
 		  audio.playSfx('buy');
 		  this._applyStyleItem(cat, item);
+          if (checkCollectorAchievement()) showFloatingAchievement('collector', 8000);
 		  this._refreshStats();
 		  this._renderShop(root, this._shopCategory);
 		},
@@ -2553,61 +2556,51 @@ _buildPreviewField(container) {
     this._bindClose(el);
 
 	el.querySelector('[data-claim]').addEventListener('click', () => {
-	  // смотрим состояние ДО клейма
-	  const wasTest = isTestModeUnlocked();
+      const res = claimQuestReward();
+      const next = currentQuestStage();
+      this._refreshQuest(el);
+      this._refreshStats();
+      this._updateQuestBadge();
 
-	  const res = claimQuestReward();
-	  const isTestNow = isTestModeUnlocked();
-	  const justUnlocked = (!wasTest && isTestNow);
+      const afterClaim = () => {
+        res.newlyUnlocked.forEach((id, i) => {
+          setTimeout(() => showFloatingAchievement(id, 8000), i * 500);
+        });
+        if (res.stageCompleted && !res.progressionComplete) {
+          const unlocked = () => {
+            if (res.trialUnlockedNow) this._showTrialUnlockedDialog(el);
+            else showMessage(t('quest.stageUnlocked.text', {
+              deck: next.deckSize, min: next.minPogons,
+            }), { title: t('quest.stageUnlocked.title') });
+          };
+          if (res.newlyUnlocked.length) {
+            showMessage(t('achieve.unlocked'), { title: t('achieve.unlocked'), onClose: unlocked });
+          } else unlocked();
+        } else if (res.newlyUnlocked.length) {
+          showMessage(t('achieve.unlocked'), { title: t('achieve.unlocked') });
+        }
+      };
 
-	  // Сбрасываем прогресс квестов СРАЗУ (если только что открылось Испытание)
-	  if (justUnlocked) {
-	    for (const r of Object.keys(Progress.quests)) {
-	      Progress.quests[r] = { progress: 0, claimed: 0 };
-	    }
-	    saveProgress();
-	  }
+      if (res.total > 0) {
+        audio.playSfx('cash');
+        showMessage(t('quest.reward.received', { n: res.total }), {
+          title: t('quest.reward.title'), onClose: afterClaim,
+        });
+        return;
+      }
+      if (res.trialUnlockedNow) { afterClaim(); return; }
 
-	  this._refreshQuest(el);
-	  this._refreshStats();
-	  this._updateQuestBadge();
-
-	  // === Шаг 1: показываем очки ===
-	if (res.total > 0) {
-	  audio.playSfx('cash');
-	  showMessage(
-		t('quest.reward.received', { n: res.total }),
-		{
-		  title: t('quest.reward.title'),
-		  onClose: () => {
-			if (justUnlocked) this._showTrialUnlockedDialog(el);
-		  }
-		}
-	  );
-	  return;
-	}
-
-	  // если наград не было, но Испытание только что открылось (теоретически)
-	  if (justUnlocked) {
-	    this._showTrialUnlockedDialog(el);
-	    return;
-	  }
-
-	  // стандартные ветки ошибок
-	  audio.playSfx('tap_up');
-	  const anyProgress = activeOrder().some(r => Progress.quests[r].progress >= 1);
-	  const allClaimed  = activeOrder().every(r => {
-	    const q = Progress.quests[r];
-	    return q.progress >= 1 && q.claimed >= q.progress;
-	  });
-	if (!anyProgress) {
-	  showMessage(t('quest.reward.none'), { title: t('quest.reward.title') });
-	} else if (allClaimed) {
-	  showMessage(t('quest.reward.allClaimed'), { title: t('quest.reward.title') });
-	} else {
-	  showMessage(t('quest.reward.nothing'), { title: t('quest.reward.title') });
-	}
-	});
+      audio.playSfx('tap_up');
+      const stage = currentQuestStage();
+      const anyProgress = activeOrder().some(r => Progress.quests[r].progress >= stage.minPogons);
+      const allClaimed = activeOrder().every(r => {
+        const q = Progress.quests[r];
+        return q.progress >= stage.minPogons && q.claimed >= q.progress;
+      });
+      if (!anyProgress) showMessage(t('quest.reward.none'), { title: t('quest.reward.title') });
+      else if (allClaimed) showMessage(t('quest.reward.allClaimed'), { title: t('quest.reward.title') });
+      else showMessage(t('quest.reward.nothing'), { title: t('quest.reward.title') });
+    });
     el.querySelector('[data-reset]').addEventListener('click', () => {
       audio.playSfx('tap_up');
 		showConfirm(
@@ -2639,7 +2632,7 @@ _buildPreviewField(container) {
           return;
         }
         const r = uncompleted[Math.floor(Math.random() * uncompleted.length)];
-        Progress.quests[r].progress = 1;
+        Progress.quests[r].progress = currentQuestStage().minPogons;
         saveProgress();
         this._refreshQuest(el);
         this._refreshStats();
@@ -2873,18 +2866,21 @@ _navigateLang(e) {
     const list = root.querySelector('.mm-quest-list');
     list.innerHTML = '';
 
+    const stage = currentQuestStage();
     const order = activeOrder();
-    const isTest = isTestModeUnlocked();
 
-    // заголовок режима
     const header = document.createElement('div');
     header.className = 'mm-quest-header';
-    header.textContent = isTest ? t('quest.headerTrial') : t('quest.headerClassic');
+    header.textContent = stage.index === 0
+      ? t('quest.headerClassic')
+      : stage.index === 1
+        ? t('quest.headerTrial')
+        : t('quest.headerChallenge', { deck: stage.deckSize, min: stage.minPogons });
     list.appendChild(header);
 
     for (const r of order) {
       const q = Progress.quests[r];
-      const done = q.progress >= 1; // Выполнен, если прогресс >= 1
+      const done = q.progress >= stage.minPogons;
       const claimed = done && q.claimed >= q.progress;
 
       const row = document.createElement('div');
@@ -2919,11 +2915,16 @@ if (claimed) {
       list.appendChild(row);
     }
 
-    // подсказка про тест-режим
-    if (!isTest) {
+    if (stage.index === 0) {
       const hint = document.createElement('div');
       hint.className = 'mm-quest-hint';
       hint.textContent = t('quest.hintClassic');
+      list.appendChild(hint);
+    } else if (stage.index < 7) {
+      const next = QUEST_STAGES[stage.index + 1];
+      const hint = document.createElement('div');
+      hint.className = 'mm-quest-hint';
+      hint.textContent = t('quest.hintNext', { deck: next.deckSize, min: next.minPogons });
       list.appendChild(hint);
     }
   }
@@ -3049,7 +3050,7 @@ if (claimed) {
       : ASSETS.starIcon;
 
     const el = document.createElement('div');
-    el.className = 'msg-overlay';
+    el.className = 'msg-overlay msg-overlay--achievement-detail';
     el.style.display = 'flex';
     el.innerHTML = `
       <div class="mm-achieve-detail">
