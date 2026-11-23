@@ -10,7 +10,7 @@ Details checked: https://yandex.ru/dev/games/doc/ru/requirements/1/6
 
 | Requirement | Current observation / action | Status |
 |---|---|---|
-| 1.6.1.6 / 1.6.2.5 — no browser system media player | Music had been played via `new Audio(...)`; SFX had an HTMLAudio fallback; boot also created a silent HTMLAudio element. Replaced music playback with fetched/decoded AudioBuffers and Web Audio sources; removed HTMLAudio fallback and silent media warm-up. | Implemented; device/browser verification still required |
+| 1.6.1.6 / 1.6.2.5 — no browser system media player | Music had been played via `new Audio(...)`; SFX had an HTMLAudio fallback; boot also created a silent HTMLAudio element. Replaced music playback with fetched/decoded AudioBuffers and Web Audio sources; removed HTMLAudio fallback and silent media warm-up. User confirmed the system player is not visible during the current PC/browser test. | PC/browser check confirmed by user; mobile check still required |
 | 1.6.2.2 — desktop active area aspect ratio | `js/ui/ui_scale.js` scales the scene to 1366×768 proportions (1.78:1), below the 2:1 maximum. | Code appears compliant; test actual portal container / sticky banner layout |
 | 1.10.1 / 1.10.3 — no clipping or overlap on resize/orientation | Main scene is scaled to the viewport; achievement-detail overlay was changed to be scene-bounded. | Partial; broad manual viewport/orientation check remains |
 | 1.14 — no technical errors or freezes | Smoke suite covers a selection of menu/game flows, not the full range of platform lifecycle, ad, gesture, browser-history, and device cases. | Not fully verified |
