@@ -655,3 +655,27 @@ body.is-mobile .mm-achieve-detail__footer .mm-btn {
   min-height: max(30px, calc(38px * var(--ui)));
   height: max(30px, calc(38px * var(--ui)));
 }
+
+/* The detail view is intentionally wider than the achievement grid dialog:
+   this gives the square badge enough width to grow to the scene's inner height. */
+.mm-achieve-detail {
+  width: min(calc(1120px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-width: calc(100% - calc(40px * var(--ui)));
+  overflow: hidden;
+}
+.mm-achieve-detail__img-wrap {
+  flex: 0 0 55%;
+  min-height: 0;
+  margin: calc(2px * var(--ui)) 0;
+  border-radius: calc(12px * var(--ui));
+}
+.mm-achieve-detail__img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+body.is-mobile .mm-achieve-detail {
+  width: min(calc(1120px * var(--ui)), calc(100% - calc(24px * var(--ui))));
+  max-width: calc(100% - calc(24px * var(--ui)));
+}
+body.is-mobile .mm-achieve-detail__img-wrap { flex-basis: 55%; }
