@@ -172,15 +172,6 @@ body.is-mobile .mm-tab--active {
 }
 
 /* --- Оверлей с описанием --- */
-.msg-overlay--achievement-detail {
-  height: 100vh;
-  bottom: auto;
-}
-@supports (height: 100dvh) {
-  .msg-overlay--achievement-detail {
-    height: 100dvh;
-  }
-}
 .mm-achieve-detail {
   display: flex;
   flex-direction: row;
@@ -350,16 +341,6 @@ body.is-mobile .mm-achieve-title__star {
   height: max(18px, calc(22px * var(--ui)));
 }
 
-/* Кнопка "В МЕНЮ" — крупнее, по центру */
-body.is-mobile .mm-overlay__box--achievements > [data-close] {
-  align-self: center;
-  font-size: max(15px, calc(18px * var(--ui))) !important;
-  padding: max(8px, calc(10px * var(--ui))) max(28px, calc(36px * var(--ui))) !important;
-  min-width: calc(160px * var(--ui));
-  min-height: max(38px, calc(44px * var(--ui)));
-  height: auto;
-  margin-top: calc(4px * var(--ui));
-}
 body.is-mobile .mm-overlay__box--achievements {
   /* уже есть — но убедимся, что flex-цепочка держит сетку */
   display: flex;
@@ -573,3 +554,52 @@ body.is-mobile .mm-achieve-detail__img-wrap {
   aspect-ratio: 1;
 }
 body.is-mobile .mm-achieve-detail__desc { max-height: none; }
+
+/* Both achievement dialogs share the same compact 900×600 reference frame. */
+.mm-overlay__box--achievements,
+.mm-achieve-detail {
+  width: min(calc(900px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+  height: min(calc(600px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+  max-width: calc(100% - calc(60px * var(--ui)));
+  max-height: calc(100% - calc(60px * var(--ui)));
+  box-sizing: border-box;
+}
+.mm-achieve-detail {
+  padding: calc(36px * var(--ui));
+  gap: calc(28px * var(--ui));
+}
+.mm-achieve-detail__img-wrap {
+  flex: 0 0 46%;
+  width: auto;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1;
+  align-self: center;
+}
+.mm-achieve-detail__content { min-height: 0; }
+.mm-achieve-detail__body { min-height: 0; }
+.mm-achieve-detail__desc { min-height: 0; }
+.mm-achieve-detail__footer { padding-top: calc(16px * var(--ui)); }
+
+body.is-mobile .mm-overlay__box--achievements,
+body.is-mobile .mm-achieve-detail {
+  width: min(calc(900px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+  height: min(calc(600px * var(--ui)), calc(100% - calc(60px * var(--ui))));
+  max-width: calc(100% - calc(60px * var(--ui)));
+  max-height: calc(100% - calc(60px * var(--ui)));
+}
+body.is-mobile .mm-achieve-detail {
+  padding: calc(36px * var(--ui));
+  gap: calc(24px * var(--ui));
+}
+body.is-mobile .mm-achieve-detail__img-wrap { flex-basis: 46%; }
+body.is-mobile .mm-achieve-detail__footer .mm-btn,
+body.is-mobile .mm-overlay__box--achievements > [data-close] {
+  align-self: center;
+  font-size: max(13px, calc(18px * var(--ui))) !important;
+  padding: max(6px, calc(8px * var(--ui))) max(16px, calc(20px * var(--ui))) !important;
+  min-width: 0;
+  min-height: max(30px, calc(38px * var(--ui)));
+  height: max(30px, calc(38px * var(--ui)));
+  margin-top: calc(4px * var(--ui));
+}
