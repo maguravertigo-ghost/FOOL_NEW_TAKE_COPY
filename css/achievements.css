@@ -526,3 +526,50 @@ body.is-mobile .ach-banner__title {
 body.is-mobile .ach-banner--floating {
   top: max(14px, calc(20px * var(--ui)));
 }
+/* Achievement zoom is a scene overlay, not a viewport overlay. The game scene
+   keeps its 1366:768 frame; letterbox bars remain outside this dialog. */
+.msg-overlay--achievement-detail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: calc(20px * var(--ui));
+}
+.mm-achieve-detail {
+  width: min(calc(780px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  padding: calc(24px * var(--ui));
+  gap: calc(24px * var(--ui));
+}
+.mm-achieve-detail__img-wrap {
+  width: min(calc(300px * var(--ui)), 46%);
+  height: auto;
+  aspect-ratio: 1;
+  flex: 0 1 46%;
+  min-width: 0;
+}
+.mm-achieve-detail__content { min-height: 0; }
+.mm-achieve-detail__body { min-width: 0; }
+.mm-achieve-detail__footer { flex: 0 0 auto; padding-top: calc(16px * var(--ui)); }
+
+body.is-mobile .msg-overlay--achievement-detail {
+  padding: calc(12px * var(--ui));
+}
+body.is-mobile .mm-achieve-detail {
+  width: calc(100% - calc(24px * var(--ui)));
+  max-width: calc(100% - calc(24px * var(--ui)));
+  max-height: calc(100% - calc(24px * var(--ui)));
+  padding: calc(18px * var(--ui));
+  gap: calc(18px * var(--ui));
+}
+body.is-mobile .mm-achieve-detail__img-wrap {
+  width: 46%;
+  height: auto;
+  flex: 0 1 46%;
+  aspect-ratio: 1;
+}
+body.is-mobile .mm-achieve-detail__desc { max-height: none; }
