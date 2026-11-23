@@ -404,11 +404,8 @@ setLang(savedLang || sdkLang, { persist: false });
   }
   async _warmupRender() {
     try {
-      // 1. Прогрев аудио (инициализация AudioContext)
-      const silent = new Audio();
-      silent.volume = 0.001;
-      silent.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
-      silent.play().catch(() => {});
+      // Аудио запускается через Web Audio API после жеста пользователя.
+      // Не создавать HTMLMediaElement: он вызывает системный плеер браузера.
 
       // 2. Прогрев карты (создание + анимация в 1 кадр) — прогревает
       //    SVG-рендер, drop-shadow, will-change слой

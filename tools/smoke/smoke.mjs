@@ -60,17 +60,18 @@ window.Element.prototype.scrollBy = function () {};
 window.Element.prototype.scrollTo = function () {};
 window.Element.prototype.scrollIntoView = function () {};
 
+let fakeAudioElementCreations = 0;
 class FakeAudio {
-  constructor(src) { this.src = src; this.volume = 1; this.preload = 'auto'; this._l = {}; }
+  constructor(src) { fakeAudioElementCreations++; this.src = src; this.volume = 1; this.preload = 'auto'; this._l = {}; }
   addEventListener(t, f) { (this._l[t] ||= []).push(f); }
   removeEventListener() {} play() { return Promise.resolve(); } pause() {} load() {}
 }
 globalThis.Audio = window.Audio = FakeAudio;
 class FakeCtx { constructor() { this.state = 'running'; this.destination = {}; this.currentTime = 0; }
-  createGain() { return { gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {} }, connect() {} }; }
-  createBufferSource() { return { buffer: null, connect() {}, start() {}, stop() {}, playbackRate: { value: 1 } }; }
-  createBuffer(c, l, r) { return { getChannelData: () => new Float32Array(l) }; }
-  decodeAudioData() { return Promise.resolve({}); }
+  createGain() { return { gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} }, connect() {}, disconnect() {} }; }
+  createBufferSource() { return { buffer: null, connect() {}, disconnect() {}, start() {}, stop() {}, playbackRate: { value: 1 } }; }
+  createBuffer(c, l, r) { return { duration: 100, getChannelData: () => new Float32Array(l) }; }
+  decodeAudioData() { return Promise.resolve({ duration: 100 }); }
   resume() { return Promise.resolve(); } suspend() { return Promise.resolve(); } close() {} }
 globalThis.AudioContext = window.AudioContext = FakeCtx;
 window.AudioContext = FakeCtx;
@@ -80,7 +81,7 @@ globalThis.fetch = window.fetch = async (url) => {
   const p = path.join(ROOT, String(url).replace(/^\//, '').split('?')[0]);
   if (!fs.existsSync(p)) return { ok: false, status: 404, statusText: 'Not Found', text: async () => '' };
   const txt = fs.readFileSync(p, 'utf8');
-  return { ok: true, status: 200, statusText: 'OK', text: async () => txt, json: async () => JSON.parse(txt) };
+  return { ok: true, status: 200, statusText: 'OK', text: async () => txt, arrayBuffer: async () => new TextEncoder().encode(txt).buffer, json: async () => JSON.parse(txt) };
 };
 
 const origError = console.error;
@@ -236,6 +237,41 @@ await step('quest branches advance 36/52 then require exact minimum pogons', asy
     Object.assign(progress.Progress, original);
     progress.saveProgress();
   }
+});
+
+await step('audio engine plays and pauses music using Web Audio only', async () => {
+  const { AudioEngine } = await import('file://' + path.join(ROOT, 'js/audio/audio_engine.js'));
+  const engine = new AudioEngine();
+  const sources = [];
+  const makeGain = () => ({
+    gain: { value: 0, setTargetAtTime() {}, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {} },
+    connect() {}, disconnect() {},
+  });
+  engine._audioCtx = {
+    state: 'running', currentTime: 1, destination: {},
+    createGain: makeGain,
+    createBufferSource() {
+      const source = { buffer: null, connect() {}, disconnect() {}, start(_when, offset) { this.offset = offset; }, stop() {} };
+      sources.push(source);
+      return source;
+    },
+  };
+  engine._musicGain = makeGain();
+  engine._musicBuffers[0] = { duration: 100 };
+  const before = fakeAudioElementCreations;
+  const sourceText = fs.readFileSync(path.join(ROOT, 'js/audio/audio_engine.js'), 'utf8');
+  const appText = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  if (/new\s+Audio\s*\(/.test(sourceText + appText)) throw new Error('HTMLAudio construction remains in game audio paths');
+  engine.startMusic();
+  if (!engine._el || sources.length !== 1) throw new Error('music did not start from a Web Audio buffer');
+  engine._audioCtx.currentTime = 8;
+  engine.pauseMusic();
+  if (engine._el || engine._musicOffset !== 7) throw new Error('music pause did not preserve position');
+  engine.resumeMusic();
+  if (!engine._el || sources.length !== 2 || sources[1].offset !== 7) throw new Error('music did not resume at saved position');
+  engine.playSfx('not-a-real-sfx');
+  if (fakeAudioElementCreations !== before) throw new Error('audio engine created HTMLAudioElement');
+  engine.pauseMusic();
 });
 
 await step('achievement priority, exact pogon count and collector unlock', async () => {

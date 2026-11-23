@@ -999,7 +999,7 @@ _updateQuestBadge() {
 		    <div class="mm-credits__title">${t('credits.title')}</div>
 		    <div class="mm-credits__row">
 		      <b>${t('credits.cardbacks')}:</b>
-		      <a href="https://www.magnific.com" target="_blank" rel="noopener">designed by Freepik - Magnific.com</a>
+		      designed by Freepik — Magnific
 		    </div>
 		    <div class="mm-credits__row">
 		      <b>${t('credits.sfx')}:</b>

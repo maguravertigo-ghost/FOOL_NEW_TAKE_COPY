@@ -54,7 +54,7 @@ export class AudioEngine {
     this.sfxEnabled   = true;
     this.musicEnabled = true;
 
-    this._el            = null;    // текущий Audio
+    this._el            = null;    // текущий Web Audio источник
     this._index         = 0;
     this._firstPlayDone = false;
     this._started       = false;
@@ -63,6 +63,12 @@ export class AudioEngine {
 	this._sfxPaused = false;
 	this._audioCtx = null; // Контекст для Web Audio API
     this._sfxBuffers = {}; // Кеш загруженных звуков
+    this._musicBuffers = {};
+    this._musicGain = null;
+    this._musicOffset = 0;
+    this._musicStartedAt = 0;
+    this._musicTimer = null;
+    this._musicSources = new Set();
 	    // Глобальное возобновление AudioContext при любом тапе (для iOS)
     document.addEventListener('pointerdown', () => {
       if (this._audioCtx && this._audioCtx.state === 'suspended') {
@@ -75,8 +81,8 @@ export class AudioEngine {
 
   setVolume(v) {
     this.masterVolume = Math.max(0, Math.min(1, v));
-    if (this._el) {
-      this._el.volume = this.musicEnabled ? this.masterVolume : 0;
+    if (this._musicGain && this._audioCtx) {
+      this._musicGain.gain.setTargetAtTime(this.musicEnabled ? this.masterVolume : 0, this._audioCtx.currentTime, 0.03);
     }
   }
   getVolume() { return this.masterVolume; }
@@ -97,8 +103,12 @@ export class AudioEngine {
         if (this._audioCtx.state === 'suspended') {
           this._audioCtx.resume();
         }
-        // Предзагрузка всех SFX в буферы
+        this._musicGain = this._audioCtx.createGain();
+        this._musicGain.gain.value = 0;
+        this._musicGain.connect(this._audioCtx.destination);
+        // Все игровые звуки идут через Web Audio, без HTML media session.
         this._preloadSfxBuffers();
+        this._preloadMusicBuffers();
       }
     } catch (e) {
       console.warn('[audio] Web Audio API failed:', e);
@@ -122,242 +132,193 @@ export class AudioEngine {
     }
   }
 
-/* ---------- музыка ---------- */
+/* ---------- Музыка: только Web Audio API, без HTMLMediaElement ---------- */
+
+async _preloadMusicBuffers() {
+  if (!this._audioCtx) return;
+  for (let i = 0; i < MUSIC_PLAYLIST.length; i++) {
+    const url = MUSIC_PLAYLIST[i];
+    try {
+      const response = await fetch(bust(url));
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.arrayBuffer();
+      this._musicBuffers[i] = await this._audioCtx.decodeAudioData(data);
+      if (i === this._index && this.musicEnabled && this._started && !this._el) {
+        this._startMusicBuffer(i, this._musicOffset, true);
+      }
+    } catch (error) {
+      console.error('[audio] music decode failed:', url, error);
+      this._failedMusicIndices = this._failedMusicIndices || new Set();
+      this._failedMusicIndices.add(i);
+      if (i === this._index && !this._el) this._onTrackEnded(i, true);
+    }
+  }
+}
 
 startMusic() {
-  if (this._el) return;
+  if (this._el || !this._audioCtx) return;
   this._index = 0;
+  this._musicOffset = 0;
   this._firstPlayDone = false;
-  this._playTrack(true);
+  this._startMusicBuffer(this._index, 0, true);
+}
+
+_startMusicBuffer(index, offset = 0, fadeIn = false) {
+  const ctx = this._audioCtx;
+  const buffer = this._musicBuffers[index];
+  if (!ctx || !buffer || !this.musicEnabled || this._el) return;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(this._musicGain);
+  this._el = source;
+  this._musicOffset = Math.max(0, offset % buffer.duration);
+  this._musicStartedAt = ctx.currentTime;
+  this._musicSources.add(source);
+  source.onended = () => {
+    this._musicSources.delete(source);
+    if (this._el !== source) return;
+    this._el = null;
+    this._musicOffset = 0;
+    this._onTrackEnded(index, false);
+  };
+  try {
+    source.start(0, this._musicOffset);
+    const target = this.musicEnabled ? this.masterVolume : 0;
+    if (fadeIn) {
+      this._musicGain.gain.cancelScheduledValues(ctx.currentTime);
+      this._musicGain.gain.setValueAtTime(0, ctx.currentTime);
+      this._musicGain.gain.linearRampToValueAtTime(target, ctx.currentTime + FADE_IN_MS / 1000);
+    } else {
+      this._musicGain.gain.setTargetAtTime(target, ctx.currentTime, 0.05);
+    }
+  } catch (error) {
+    this._el = null;
+    console.error('[audio] WebAudio source start failed:', error);
+    this._onTrackEnded(index, true);
+  }
 }
 
 stopMusic() {
+  if (this._musicTimer) clearTimeout(this._musicTimer);
+  this._musicTimer = null;
   if (!this._el) return;
-  const el = this._el;
+  const source = this._el;
+  this._musicOffset = this._currentMusicOffset();
   this._el = null;
-  this._fade(el, el.volume, 0, 400, () => {
-    el.pause();
-    el.src = '';
-  });
+  try { source.stop(); } catch { /* already stopped */ }
+  try { source.disconnect(); } catch { /* noop */ }
+  this._musicGain.gain.setTargetAtTime(0, this._audioCtx.currentTime, 0.05);
 }
 
 enableMusic() {
   this.musicEnabled = true;
-  // до первого жеста ничего не запускаем — стартанёт ensureStarted
-  if (!this._started) return;
-
+  if (!this._started || !this._audioCtx) return;
   if (!this._el) {
-    this._playTrack(false);
+    if (this._musicBuffers[this._index]) this._startMusicBuffer(this._index, this._musicOffset, false);
     return;
   }
-  this._fade(this._el, this._el.volume, this.masterVolume, 800);
+  this._musicGain.gain.setTargetAtTime(this.masterVolume, this._audioCtx.currentTime, 0.08);
 }
 
 disableMusic() {
   this.musicEnabled = false;
-  if (!this._el) return;
-  this._fade(this._el, this._el.volume, 0, 800);
-}
-
-_playTrack(isFirst) {
-  const url = MUSIC_PLAYLIST[this._index];
-  console.log('[audio] play track:', url, 'first:', isFirst);
-
-  const el = new Audio(bust(url));
-  el.preload = 'auto';
-  el.volume = isFirst ? 0 : (this.musicEnabled ? this.masterVolume : 0);
-  this._el = el;
-
-  el.addEventListener('loadedmetadata', () => {
-    console.log('[audio] track loaded, duration =', el.duration.toFixed(1) + 's');
-  });
-el.addEventListener('error', (e) => {
-  console.error('[audio] track error:', url, e);
-  this._lastFailedIndex = this._index;    // ← пометка о сбое
-  this._onTrackEnded(isFirst);
-});
-el.addEventListener('ended', () => this._onTrackEnded(isFirst));
-
-el.load();   // ← форсируем перечитать метаданные (длительность)
-
-const p = el.play();
-  if (p && typeof p.catch === 'function') {
-    p.then(() => console.log('[audio] play() OK'))
-     .catch(err => {
-       console.warn('[audio] play() rejected:', err.message);
-       // однократный retry — на следующий pointerdown
-       const retry = () => {
-         document.removeEventListener('pointerdown', retry, true);
-         // если трек уже заменился — не пытаемся
-         if (this._el !== el) return;
-         el.play().then(() => console.log('[audio] retry OK'))
-                  .catch(() => {});
-       };
-       document.addEventListener('pointerdown', retry, true);
-     });
-  }
-
-  if (isFirst) {
-    this._fade(el, 0, this.masterVolume, FADE_IN_MS);
+  if (this._musicGain && this._audioCtx) {
+    this._musicGain.gain.setTargetAtTime(0, this._audioCtx.currentTime, 0.08);
   }
 }
 
-_onTrackEnded(isFirst) {
-  const prevIndex = this._index;
-  this._el = null;
-  this._index = (this._index + 1) % MUSIC_PLAYLIST.length;
-  this._firstPlayDone = true;
+_currentMusicOffset() {
+  const buffer = this._musicBuffers[this._index];
+  if (!buffer || !this._el || !this._audioCtx) return this._musicOffset;
+  return (this._musicOffset + this._audioCtx.currentTime - this._musicStartedAt) % buffer.duration;
+}
 
-  // защита от бесконечного цикла, если все треки падают:
-  // если два раза подряд не удалось — стоп.
-  if (this._lastFailedIndex === prevIndex) {
-    console.warn('[audio] playlist failed twice — stopping');
+_onTrackEnded(index, failed = false) {
+  if (this._el) return;
+  if (failed) this._failedMusicIndices = this._failedMusicIndices || new Set();
+  if (failed) this._failedMusicIndices.add(index);
+  if (this._failedMusicIndices?.size >= MUSIC_PLAYLIST.length) {
+    console.warn('[audio] playlist failed — stopping');
     this.musicEnabled = false;
     return;
   }
-
-  setTimeout(() => {
-    if (!this.musicEnabled) return;
-    this._playTrack(false);
-  }, MUSIC_GAP_MS);
+  this._index = (index + 1) % MUSIC_PLAYLIST.length;
+  this._musicOffset = 0;
+  this._firstPlayDone = true;
+  if (this._musicTimer) clearTimeout(this._musicTimer);
+  const tryStartNext = () => {
+    this._musicTimer = null;
+    if (!this.musicEnabled || this._el) return;
+    if (this._musicBuffers[this._index]) {
+      this._startMusicBuffer(this._index, 0, false);
+    } else if (this._failedMusicIndices?.has(this._index)) {
+      this._onTrackEnded(this._index, true);
+    } else {
+      this._musicTimer = setTimeout(tryStartNext, 500);
+    }
+  };
+  this._musicTimer = setTimeout(tryStartNext, MUSIC_GAP_MS);
 }
 
   /* ---------- SFX ---------- */
 
   playSfx(name) {
-    if (!this.sfxEnabled) return;
-    if (this._sfxPaused) return;
-    const url = SFX_LIST[name];
-    if (!url) return;
-
-    // Разбудить AudioContext, если он заснул (Chrome)
-    if (this._audioCtx && this._audioCtx.state === 'suspended') {
-      this._audioCtx.resume().catch(() => {});
+    if (!this.sfxEnabled || this._sfxPaused || !this._audioCtx) return;
+    const buffer = this._sfxBuffers[SFX_LIST[name]];
+    if (!buffer) return; // no HTMLAudio fallback: it registers a system media player
+    if (this._audioCtx.state === 'suspended') this._audioCtx.resume().catch(() => {});
+    try {
+      const source = this._audioCtx.createBufferSource();
+      const gain = this._audioCtx.createGain();
+      source.buffer = buffer;
+      gain.gain.value = this.masterVolume;
+      source.connect(gain);
+      gain.connect(this._audioCtx.destination);
+      this._sfxPool.add(source);
+      source.onended = () => { this._sfxPool.delete(source); source.disconnect(); gain.disconnect(); };
+      source.start(0);
+    } catch (error) {
+      console.warn('[audio] WebAudio SFX play failed:', error);
     }
-
-    // Если Web Audio API доступен и буфер загружен — играем через него (мобилки)
-    if (this._audioCtx && this._sfxBuffers[url]) {
-      try {
-        const source = this._audioCtx.createBufferSource();
-        source.buffer = this._sfxBuffers[url];
-        
-        // Громкость
-        const gainNode = this._audioCtx.createGain();
-        gainNode.gain.value = this.masterVolume;
-        
-        source.connect(gainNode);
-        gainNode.connect(this._audioCtx.destination);
-        source.start(0);
-        return;
-      } catch (e) {
-        console.warn('[audio] WebAudio play failed:', e);
-      }
-    }
-
-    // Фолбэк на старый метод (Десктоп или если Web Audio не загрузился)
-    const el = new Audio(url);
-    el.volume = this.masterVolume;
-
-    this._sfxPool.add(el);
-    const release = () => this._sfxPool.delete(el);
-    el.addEventListener('ended', release);
-    el.addEventListener('error', release);
-
-    el.play().catch(release);
   }
 
-  /** Жёсткая остановка всех SFX с очисткой пула. */
+  /** Жёсткая остановка звуков при рекламе/сворачивании. */
   stopAllSfx() {
     this._sfxPaused = true;
-    if (this._sfxPool) {
-      for (const el of this._sfxPool) {
-        try {
-          el.pause();
-          el.currentTime = 0;
-        } catch { /* noop */ }
-      }
-      this._sfxPool.clear();
-    }
-    // Замораживаем ВСЁ, включая длинные Web Audio буферы (card_shuffle и т.п.)
-    // resumeAllSfx() разморозит на той же позиции.
-    if (this._audioCtx && this._audioCtx.state === 'running') {
-      this._audioCtx.suspend().catch(() => {});
-    }
+    for (const source of this._sfxPool) { try { source.stop(); } catch { /* ended */ } }
+    this._sfxPool.clear();
+    if (this._audioCtx?.state === 'running') this._audioCtx.suspend().catch(() => {});
   }
 
-pauseAllSfx() {
-  this._sfxPaused = true;
-  // Останавливаем HTML5 Audio
-  if (this._sfxPool) {
-    for (const el of this._sfxPool) {
-      try { el.pause(); } catch { /* noop */ }
-    }
+  pauseAllSfx() {
+    this._sfxPaused = true;
+    if (this._audioCtx?.state === 'running') this._audioCtx.suspend().catch(() => {});
   }
-  // Приостанавливаем Web Audio (если активен)
-  if (this._audioCtx && this._audioCtx.state === 'running') {
-    this._audioCtx.suspend();
-  }
-}
 
-resumeAllSfx() {
-  this._sfxPaused = false;
-  // Восстанавливаем HTML5 Audio
-  if (!this._sfxPool) return;
-  for (const el of this._sfxPool) {
-    if (el.paused && el.currentTime > 0 && el.currentTime < (el.duration || Infinity)) {
-      try { el.play().catch(() => {}); } catch { /* noop */ }
-    }
+  resumeAllSfx() {
+    this._sfxPaused = false;
+    if (this._audioCtx?.state === 'suspended') this._audioCtx.resume().catch(() => {});
   }
-  // Восстанавливаем Web Audio
-  if (this._audioCtx && this._audioCtx.state === 'suspended') {
-    this._audioCtx.resume();
-  }
-}
 
-resumeAllSfx() {
-  this._sfxPaused = false;
-  if (!this._sfxPool) return;
-  for (const el of this._sfxPool) {
-    if (el.paused && el.currentTime > 0 &&
-        el.currentTime < (el.duration || Infinity)) {
-      try { el.play().catch(() => {}); } catch { /* noop */ }
-    }
-  }
-}
-
-  /** Пауза музыки с сохранением позиции (для паузы игры, потери фокуса). */
+  /** Пауза музыки сохраняет позицию буфера. */
   pauseMusic() {
-    if (!this._el) return;
-    try { this._el.pause(); } catch { /* noop */ }
+    if (!this._el || !this._audioCtx) return;
+    const source = this._el;
+    this._musicOffset = this._currentMusicOffset();
+    this._el = null;
+    try { source.stop(); } catch { /* noop */ }
+    try { source.disconnect(); } catch { /* noop */ }
   }
 
-  /** Возобновление после pauseMusic. Если музыка выключена — не запускаем. */
   resumeMusic() {
-    if (!this._el) return;
-    if (!this.musicEnabled) return;
-    if (!this._el.paused) return;
-    this._el.play().catch(() => {});
+    if (this._el || !this.musicEnabled || !this._audioCtx) return;
+    if (this._audioCtx.state === 'suspended') this._audioCtx.resume().catch(() => {});
+    if (this._musicBuffers[this._index]) this._startMusicBuffer(this._index, this._musicOffset, false);
   }
 
   setSfxEnabled(on) { this.sfxEnabled = !!on; }
 
-  /* ---------- утилита fade ---------- */
 
-	_fade(el, from, to, duration, done) {
-	  if (!el) return;
-	  const d = (typeof duration === 'number' && duration > 0) ? duration : 1;
-	  const a = Number.isFinite(from) ? from : 0;
-	  const b = Number.isFinite(to)   ? to   : 0;
-	  const t0 = performance.now();
-	  const step = () => {
-		if (!el) return;
-		const t = Math.min(1, (performance.now() - t0) / d);
-		el.volume = Math.max(0, Math.min(1, a + (b - a) * t));
-		if (t >= 1) { if (done) done(); return; }
-		requestAnimationFrame(step);
-	  };
-	  requestAnimationFrame(step);
-	}
 }
 
 /* Синглтон */
