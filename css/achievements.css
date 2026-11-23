@@ -679,3 +679,29 @@ body.is-mobile .mm-achieve-detail {
   max-width: calc(100% - calc(24px * var(--ui)));
 }
 body.is-mobile .mm-achieve-detail__img-wrap { flex-basis: 55%; }
+
+/* Achievement art is square; keep its clip frame square as well so the same
+   image always fills the mask identically at every scene size/orientation. */
+.mm-achieve-detail__img-wrap {
+  flex: 0 0 auto;
+  width: auto;
+  height: calc(100% - calc(4px * var(--ui)));
+  max-width: 55%;
+  aspect-ratio: 1 / 1;
+  align-self: center;
+  margin: 0;
+}
+.mm-achieve-detail__img-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+body.is-mobile .mm-achieve-detail__img-wrap {
+  flex-basis: auto;
+  width: auto;
+  height: calc(100% - calc(4px * var(--ui)));
+  max-width: 55%;
+  aspect-ratio: 1 / 1;
+}
