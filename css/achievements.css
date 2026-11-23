@@ -705,3 +705,72 @@ body.is-mobile .mm-achieve-detail__img-wrap {
   max-width: 55%;
   aspect-ratio: 1 / 1;
 }
+
+/* Main achievement gallery: fixed two-row square grid, centered as one unit. */
+.mm-overlay__box--achievements {
+  width: min(calc(1120px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-width: calc(100% - calc(40px * var(--ui)));
+  height: min(calc(600px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-height: calc(100% - calc(40px * var(--ui)));
+  padding: calc(28px * var(--ui));
+  gap: calc(16px * var(--ui));
+  justify-content: center;
+  box-sizing: border-box;
+}
+.mm-achievements-grid {
+  flex: 0 1 auto;
+  width: min(100%, calc(1000px * var(--ui)));
+  height: auto;
+  max-height: none;
+  aspect-ratio: 2.5 / 1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: auto;
+  align-content: center;
+  justify-items: center;
+  align-items: center;
+  gap: calc(18px * var(--ui));
+  padding: 0;
+  overflow: visible;
+}
+.mm-achievement {
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+}
+.mm-achievement__img { object-fit: cover; }
+body.is-mobile .mm-overlay__box--achievements {
+  width: min(calc(1120px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-width: calc(100% - calc(40px * var(--ui)));
+  height: min(calc(600px * var(--ui)), calc(100% - calc(40px * var(--ui))));
+  max-height: calc(100% - calc(40px * var(--ui)));
+  padding: calc(24px * var(--ui));
+  gap: calc(12px * var(--ui));
+}
+body.is-mobile .mm-achievements-grid {
+  flex: 0 1 auto;
+  width: min(100%, calc(1000px * var(--ui)));
+  height: auto;
+  aspect-ratio: 2.5 / 1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: calc(14px * var(--ui));
+  overflow: visible;
+}
+body.is-mobile .mm-achievement {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: calc(10px * var(--ui));
+}
+body.is-mobile .mm-overlay__box--achievements > [data-close] {
+  align-self: center;
+  font-size: max(13px, calc(18px * var(--ui)));
+  padding: max(6px, calc(8px * var(--ui))) max(16px, calc(20px * var(--ui)));
+  min-height: max(30px, calc(38px * var(--ui)));
+  height: max(30px, calc(38px * var(--ui)));
+  margin: 0;
+}
