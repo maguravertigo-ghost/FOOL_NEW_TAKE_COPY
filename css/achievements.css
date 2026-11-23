@@ -603,3 +603,55 @@ body.is-mobile .mm-overlay__box--achievements > [data-close] {
   height: max(30px, calc(38px * var(--ui)));
   margin-top: calc(4px * var(--ui));
 }
+
+/* Zoom dialog: tall inset image frame on the left, deliberately lower text on the right. */
+.mm-achieve-detail {
+  padding: calc(18px * var(--ui));
+  gap: calc(28px * var(--ui));
+}
+.mm-achieve-detail__img-wrap {
+  flex: 0 0 48%;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+  align-self: stretch;
+  margin: calc(2px * var(--ui)) 0;
+}
+.mm-achieve-detail__img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mm-achieve-detail__content {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: calc(30px * var(--ui)) calc(18px * var(--ui)) calc(8px * var(--ui));
+  box-sizing: border-box;
+}
+.mm-achieve-detail__body {
+  flex: 1 1 auto;
+  margin: 0;
+  padding-top: calc(12px * var(--ui));
+  justify-content: flex-start;
+}
+.mm-achieve-detail__footer {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding: calc(12px * var(--ui)) calc(4px * var(--ui)) calc(4px * var(--ui));
+}
+body.is-mobile .mm-achieve-detail {
+  padding: max(8px, calc(18px * var(--ui)));
+  gap: max(10px, calc(22px * var(--ui)));
+}
+body.is-mobile .mm-achieve-detail__img-wrap { flex-basis: 48%; }
+body.is-mobile .mm-achieve-detail__content {
+  padding: max(12px, calc(26px * var(--ui))) max(8px, calc(14px * var(--ui))) max(4px, calc(8px * var(--ui)));
+}
+body.is-mobile .mm-achieve-detail__footer .mm-btn {
+  align-self: flex-end;
+  font-size: max(13px, calc(18px * var(--ui))) !important;
+  padding: max(6px, calc(8px * var(--ui))) max(16px, calc(20px * var(--ui))) !important;
+  min-width: 0;
+  min-height: max(30px, calc(38px * var(--ui)));
+  height: max(30px, calc(38px * var(--ui)));
+}
