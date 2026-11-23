@@ -274,6 +274,20 @@ await step('audio engine plays and pauses music using Web Audio only', async () 
   engine.pauseMusic();
 });
 
+await step('rewarded SDK callback opens and closes ad lifecycle in order', async () => {
+  const { YandexSDK } = await import('file://' + path.join(ROOT, 'js/sdk/yandex_sdk.js'));
+  const sdk = new YandexSDK();
+  Object.defineProperty(sdk, 'isMock', { value: false });
+  const events = [];
+  sdk.sdk = { adv: { showRewardedVideo: ({ callbacks }) => {
+    callbacks.onOpen();
+    callbacks.onRewarded();
+    callbacks.onClose();
+  } } };
+  await sdk.showRewarded({ onOpen: () => events.push('open'), onReward: () => events.push('reward'), onClose: () => events.push('close') });
+  if (events.join(',') !== 'open,reward,close') throw new Error(`unexpected ad callbacks: ${events}`);
+});
+
 await step('achievement priority, exact pogon count and collector unlock', async () => {
   const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
   const { AchievementManager, checkCollectorAchievement } = await import('file://' + path.join(ROOT, 'js/game/achievements.js'));

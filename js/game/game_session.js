@@ -1422,15 +1422,24 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
 
   const result = await new Promise(resolve => {
     let rewarded = false;
+    let adOpened = false;
     let done = false;
-    const finish = (r) => { if (done) return; done = true; clearTimeout(tid); resolve(r); };
+    let tid;
+    const finishResult = resolve;
+    const finish = (r) => {
+      if (done) return;
+      done = true;
+      clearTimeout(tid);
+      if (adOpened) this.app.resumeFromAd();
+      finishResult(r);
+    };
     const timeoutMs = ysdk.isMock ? 1500 : 8000;
-    const tid = setTimeout(() => {
+    tid = setTimeout(() => {
       console.warn('[ad] timeout — forcing close');
       finish({ timeout: true });
     }, timeoutMs);
-
     ysdk.showRewarded({
+      onOpen: () => { adOpened = true; this.app.pauseForAd(); },
       onReward: () => { rewarded = true; },
       onClose:  () => finish({ rewarded }),
       onError:  () => finish({ error: true }),

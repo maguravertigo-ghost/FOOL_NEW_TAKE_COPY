@@ -255,7 +255,7 @@ export class YandexSDK {
   }
 
   /** Реклама за вознаграждение (RV). */
-  async showRewarded({ onReward, onClose, onError } = {}) {
+  async showRewarded({ onOpen, onReward, onClose, onError } = {}) {
 	if (this.isMock) {
 	  console.log('[sdk] mock mode — rewarded auto-skip (reward granted)');
 	  setTimeout(() => {
@@ -298,7 +298,7 @@ export class YandexSDK {
     // 3. Нормальный показ
     this.sdk.adv.showRewardedVideo({
       callbacks: {
-        onOpen:   () => console.log('[sdk] rv open'),
+        onOpen:   () => { console.log('[sdk] rv open'); onOpen?.(); },
         onRewarded: () => { console.log('[sdk] rv rewarded'); onReward?.(); },
         onClose:  () => { console.log('[sdk] rv close');  onClose?.(); },
         onError:  (err) => {

@@ -180,6 +180,8 @@ class App {
 
     this.menu = new MainMenu({
       onStartGame: (mode) => this._startGameFromMenu(mode),
+      onAdOpen: () => this.pauseForAd(),
+      onAdClose: () => this.resumeFromAd(),
     });
 
     this.pauseOverlay = new PauseOverlay({
@@ -309,11 +311,12 @@ async maybeShowAd() {
 	this._lastAdAt = now;
     await new Promise((resolve) => {
       let done = false;
+      let adOpened = false;
       const finish = () => {
         if (done) return;
         done = true;
         clearTimeout(tid);
-        this.resumeFromAd();
+        if (adOpened) this.resumeFromAd();
         resolve();
       };
       const tid = setTimeout(() => {
@@ -322,7 +325,7 @@ async maybeShowAd() {
       }, 15000);
 
       ysdk.showInterstitial({
-        onOpen:  () => this.pauseForAd(),
+        onOpen:  () => { adOpened = true; this.pauseForAd(); },
         onClose: () => finish(),
         onError: () => finish(),
       });

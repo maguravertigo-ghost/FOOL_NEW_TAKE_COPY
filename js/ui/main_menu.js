@@ -55,8 +55,10 @@ const langFlagHTML = (code) => {
 };
 
 export class MainMenu {
-  constructor({ onStartGame }) {
+  constructor({ onStartGame, onAdOpen, onAdClose }) {
     this.onStartGame = onStartGame;
+    this.onAdOpen = onAdOpen;
+    this.onAdClose = onAdClose;
     this._selectedStyle = { shirt: 0, design: 0, suits: 0, table: 0, decor: 0 };
 
     this.el = document.createElement('div');
@@ -1987,10 +1989,19 @@ _confirmBuy(root, key) {
           const { ysdk } = await import('../sdk/yandex_sdk.js');
           
           const result = await new Promise(resolve => {
+            let adOpened = false;
+            let rewarded = false;
             ysdk.showRewarded({
-              onReward: () => resolve(true),
-              onClose:  () => resolve(false),
-              onError:  () => resolve(false)
+              onOpen: () => {
+                adOpened = true;
+                this.onAdOpen?.();
+              },
+              onReward: () => { rewarded = true; },
+              onClose:  () => {
+                if (adOpened) this.onAdClose?.();
+                resolve(rewarded);
+              },
+              onError:  () => resolve(false),
             });
           });
 
