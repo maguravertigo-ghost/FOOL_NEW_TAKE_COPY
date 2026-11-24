@@ -274,6 +274,36 @@ await step('audio engine plays and pauses music using Web Audio only', async () 
   engine.pauseMusic();
 });
 
+await step('hand card hit-test takes priority over overlapping action button', async () => {
+  const { GameSession } = await import('file://' + path.join(ROOT, 'js/game/game_session.js'));
+  const session = Object.create(GameSession.prototype);
+  const card = {};
+  let actionClicks = 0;
+  let selected = null;
+  session.ready = true;
+  session._paused = false;
+  session._gameOverPending = false;
+  session._busy = false;
+  session.round = { move: 'player', phase: 'A_DUMP' };
+  session.selectedCard = null;
+  session.blockedCards = new Set();
+  session._kbdFocusOnButton = false;
+  session.actionBtn = { style: { display: 'block' }, getBoundingClientRect: () => ({ left: 0, top: 0, right: 100, bottom: 100 }) };
+  session.app = { sceneEl: { getBoundingClientRect: () => ({ left: 0, top: 0 }) } };
+  session._handCardAt = () => card;
+  session._deselect = () => {};
+  session._selectCard = (picked) => { selected = picked; };
+  session._onActionButtonClick = () => { actionClicks++; };
+  session._hitSlotUI = () => null;
+  session.handleClick(50, 50);
+  if (selected !== card || actionClicks !== 0) throw new Error('overlapping tap activated action button instead of card');
+  session._handCardAt = () => null;
+  session.handleClick(50, 50);
+  if (actionClicks !== 1) throw new Error('uncovered action button tap was not routed to action');
+  const css = fs.readFileSync(path.join(ROOT, 'css/scene-base.css'), 'utf8');
+  if (!/#action-btn\s*\{[^}]*pointer-events:\s*none/s.test(css)) throw new Error('action button still intercepts raw pointer events');
+});
+
 await step('rewarded SDK callback opens and closes ad lifecycle in order', async () => {
   const { YandexSDK } = await import('file://' + path.join(ROOT, 'js/sdk/yandex_sdk.js'));
   const sdk = new YandexSDK();

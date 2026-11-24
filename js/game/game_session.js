@@ -1982,30 +1982,52 @@ switch (action.type) {
    * ================================================================ */
 
   handleClick(x, y) {
-    if (!this.ready) return;
-	if (this._paused) return;
-	
-	if (this._gameOverPending) return;
-	
-    if (this._busy) return;
+    if (!this.ready || this._paused) return;
+    const r = this.round;
 
-    // Игрок переключился на мышь — снимаем клавиатурный фокус
+    if (!this._gameOverPending && !this._busy && r.move === 'player' && r.phase !== 'END') {
+      const slot = this._hitSlotUI(x, y);
+      if (slot && this.selectedCard) {
+        this._usingKeyboard = false;
+        if (this._kbdFocusOnButton) this._clearKbdFocus();
+        this._confirmSlot(slot);
+        return;
+      }
+    }
+
+    // Hit-test the hand before the overlapping action button. The button is
+    // pointer-transparent so this precise game-space test receives the tap.
+    const card = this._handCardAt(x, y);
+    if (card) {
+      if (this._gameOverPending || this._busy || r.move !== 'player' || r.phase === 'END') return;
+      this._usingKeyboard = false;
+      if (this._kbdFocusOnButton) this._clearKbdFocus();
+      if (card === this.selectedCard) { this._deselect(); return; }
+      if (this.blockedCards.has(card)) return;
+      this._deselect();
+      this._selectCard(card);
+      return;
+    }
+
+    if (this._pointInActionButton(x, y)) {
+      this._usingKeyboard = false;
+      if (this._kbdFocusOnButton) this._clearKbdFocus();
+      this._onActionButtonClick();
+      return;
+    }
+
+    if (this._gameOverPending || this._busy || r.move !== 'player' || r.phase === 'END') return;
     this._usingKeyboard = false;
     if (this._kbdFocusOnButton) this._clearKbdFocus();
-	
-    const r = this.round;
-    if (r.move !== 'player' || r.phase === 'END') return;
+  }
 
-    const slot = this._hitSlotUI(x, y);
-    if (slot && this.selectedCard) { this._confirmSlot(slot); return; }
-
-    const card = this._handCardAt(x, y);
-    if (!card) return;
-    if (card === this.selectedCard) { this._deselect(); return; }
-    if (this.blockedCards.has(card)) return;
-
-    this._deselect();
-    this._selectCard(card);
+  _pointInActionButton(x, y) {
+    if (!this.actionBtn || this.actionBtn.style.display === 'none') return false;
+    const scene = this.app.sceneEl.getBoundingClientRect();
+    const button = this.actionBtn.getBoundingClientRect();
+    const px = scene.left + x;
+    const py = scene.top + y;
+    return px >= button.left && px <= button.right && py >= button.top && py <= button.bottom;
   }
 
   _handCardAt(x, y) {
