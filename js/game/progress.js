@@ -31,7 +31,8 @@ function defaultState() {
 	questStage: 0,
 	achievements: {},     // { [id]: { unlockedAt: timestamp } }
 	
-    pendingAchievements: [],   // ← ДОБАВИТЬ
+    pendingAchievements: [],
+    pendingAchievementNotices: [],
     totalEpaulettes: 0,        // ← ДОБАВИТЬ
 	
 	  // Счётчик подряд идущих побед/поражений на текущей сложности.
@@ -73,7 +74,8 @@ function load() {
 	  streak:        p.streak || { level: 1, wins: 0, losses: 0 },   // ← ДОБАВИТЬ
 	  achievements: p.achievements || {},
 	  
-      pendingAchievements: p.pendingAchievements || [],   // ← ДОБАВИТЬ
+      pendingAchievements: p.pendingAchievements || [],
+      pendingAchievementNotices: Array.isArray(p.pendingAchievementNotices) ? p.pendingAchievementNotices : [],
       totalEpaulettes: p.totalEpaulettes || 0,            // ← ДОБАВИТЬ
     };
   } catch { return defaultState(); }
@@ -451,6 +453,27 @@ export function unlockAchievement(id) {
 
 export function unlockedCount() {
   return Object.keys(Progress.achievements || {}).length;
+}
+
+/** Persist match-earned unlocks until their menu replay notification is shown. */
+export function queueAchievementNotices(ids) {
+  if (!Array.isArray(Progress.pendingAchievementNotices)) Progress.pendingAchievementNotices = [];
+  const known = new Set(Progress.pendingAchievementNotices);
+  for (const id of ids || []) {
+    if (typeof id === 'string' && !known.has(id)) {
+      known.add(id);
+      Progress.pendingAchievementNotices.push(id);
+    }
+  }
+  if (ids && ids.length) saveProgress();
+}
+
+export function drainAchievementNotices() {
+  const ids = Array.isArray(Progress.pendingAchievementNotices)
+    ? Progress.pendingAchievementNotices.splice(0)
+    : [];
+  if (ids.length) saveProgress();
+  return ids;
 }
 
 export function setPendingAchievement(id) {

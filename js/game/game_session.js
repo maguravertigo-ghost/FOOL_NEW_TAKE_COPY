@@ -17,7 +17,7 @@ import { ysdk } from '../sdk/yandex_sdk.js';
 import { uiScale } from '../ui/ui_scale.js';
 // в начале файла должен быть расширенный импорт:
   import { Progress, saveProgress, addStylePoints, creditQuest,
-           setFoolToken, clearFoolToken, tickTempItems } from './progress.js';
+           setFoolToken, clearFoolToken, tickTempItems, queueAchievementNotices } from './progress.js';
 import { recordOutcome } from './progress.js';
 
 import { showMessage } from '../ui/message_overlay.js';
@@ -1207,6 +1207,7 @@ else                           this._jokerFrame('five');  // ничья
       ? (this._finishedHandCount || 0)
       : 0;
     const newlyUnlocked = AchievementManager.check({ winner, pogonsThrown });
+    queueAchievementNotices(newlyUnlocked);
  
     // ---- Обновление жетона дурака ----
     const prevOwner = Progress.foolToken ? Progress.foolToken.owner : null;

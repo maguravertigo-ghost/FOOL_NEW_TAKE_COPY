@@ -373,6 +373,9 @@ await step('achievement priority, exact pogon count and collector unlock', async
   try {
     progress.Progress.stats.wins = 1;
     progress.Progress.achievements = {};
+    progress.Progress.pendingAchievementNotices = [];
+    progress.queueAchievementNotices(['first_win', 'pogon_2']);
+    if (progress.drainAchievementNotices().join(',') !== 'first_win,pogon_2') throw new Error('match achievement notices were not persisted for menu replay');
     const firstAndThree = AchievementManager.check({ winner: 'player', pogonsThrown: 3 });
     if (firstAndThree.join(',') !== 'first_win,pogon_3') throw new Error(`wrong achievement order: ${firstAndThree}`);
     for (const id of ['pogon_1', 'pogon_2', 'pogon_4']) {

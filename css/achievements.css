@@ -475,6 +475,11 @@ body.is-mobile .mm-achieve-detail__icon img {
   top: calc(20px * var(--ui));
   z-index: 2000;   /* выше меню (z-index 500), выше fade (900) */
 }
+.ach-banner-group.ach-banner--floating-group {
+  position: fixed;
+  top: calc(20px * var(--ui));
+  z-index: 2000;
+}
 
 .ach-banner--out {
   animation: ach-out 0.55s ease forwards;

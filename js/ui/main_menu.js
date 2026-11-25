@@ -30,8 +30,8 @@ import {
 import { t, getLang, getAvailableLangs } from '../i18n/index.js';
 import { Tutorial } from './tutorial.js';
 
-import { popPendingAchievement, peekPendingAchievement } from '../game/progress.js';
-import { showFloatingAchievement } from './achievement_banner.js';
+import { popPendingAchievement, peekPendingAchievement, drainAchievementNotices } from '../game/progress.js';
+import { showFloatingAchievement, showFloatingAchievementGroup } from './achievement_banner.js';
 import { checkCollectorAchievement } from '../game/achievements.js';
 
 // Если SVG-файлы ещё не добавлены — используется эмодзи как fallback.
@@ -3098,17 +3098,16 @@ if (claimed) {
   }
 
   _checkPendingAchievement() {
-    const id = peekPendingAchievement();
-    if (!id) return;
+    if (!peekPendingAchievement() && !(Progress.pendingAchievementNotices || []).length) return;
 
-    // Задержка, чтобы меню успело отрисоваться
+    // Let the menu finish rendering, then replay every match unlock as a fresh drop.
     setTimeout(() => {
-      // Перепроверяем на случай, если игрок успел открыть оверлей
-      const stillPending = peekPendingAchievement();
-      if (!stillPending) return;
-
-      popPendingAchievement();
-      showFloatingAchievement(stillPending, 10000);
+      const ids = drainAchievementNotices();
+      const pending = peekPendingAchievement();
+      if (pending) {
+        ids.push(popPendingAchievement());
+      }
+      if (ids.length) showFloatingAchievementGroup(ids, 10000);
     }, 600);
   }
 

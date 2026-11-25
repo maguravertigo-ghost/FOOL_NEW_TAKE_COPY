@@ -80,6 +80,16 @@ export function showFloatingAchievement(id, duration = 10000) {
   return registerTimedBanner(banner, scene, duration);
 }
 
+export function showFloatingAchievementGroup(ids, duration = 10000) {
+  if (!ids || !ids.length) return null;
+  if (ids.length === 1) return showFloatingAchievement(ids[0], duration);
+  const scene = document.getElementById('scene');
+  if (!scene) return null;
+  const group = createAchievementBannerGroup(ids);
+  group.classList.add('ach-banner--floating-group');
+  return registerTimedBanner(group, scene, duration);
+}
+
 export function showTimedAchievementNode(node, parent, duration = 10000) {
   return registerTimedBanner(node, parent, duration);
 }
