@@ -88,6 +88,7 @@ export class GameSession {
 
     this.deckTopCard = null;    // верхняя карта — пока не построен стек
     this.stack = [];            // физический стек: [top ... bottom]
+    this.discardPile = [];       // cards discarded face-down, tracked for fair AI counting
     this.trump = null;
     this.trumpCard = null;
     this.trumpTaken = false;
@@ -833,6 +834,9 @@ async _animateTake(cards, defender) {
    */
   async _animateDiscard(cards) {
     if (cards.length === 0) return;
+    for (const card of cards) {
+      if (!this.discardPile.includes(card)) this.discardPile.push(card);
+    }
     const discM = this.markers.get('discard');
     const STAGGER = 60;   // мс между стартом переворотов (каскад)
 

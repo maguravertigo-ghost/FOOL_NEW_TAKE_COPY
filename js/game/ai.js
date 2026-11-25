@@ -31,64 +31,63 @@ export class AI {
 
   _getSeenCards() {
     const seen = new Set();
-    // 1. Моя рука
     for (const c of this.hand) seen.add(c.data.rank + c.data.suit);
-    
-    // 2. Текущий стол
-    if (this.s.round && this.s.round.table) {
-      for (const p of this.s.round.table) {
-        if (p.atk) seen.add(p.atk.data.rank + p.atk.data.suit);
-        if (p.def) seen.add(p.def.data.rank + p.def.data.suit);
-      }
+
+    // Every face-up card currently on the table has been publicly revealed.
+    for (const pair of this.table || []) {
+      if (pair.atk) seen.add(pair.atk.data.rank + pair.atk.data.suit);
+      if (pair.def) seen.add(pair.def.data.rank + pair.def.data.suit);
     }
-    
-    // 3. Отбой (все, что ушло за игру)
-    // Ищем массив отбоя в сессии (обычно это this.s.discard или this.s.round.discard)
-    const discard = this.s.discard || this.s.round?.discard || [];
-    for (const c of discard) {
-      seen.add(c.data.rank + c.data.suit);
-    }
-    
-    // 4. Козырь (нижняя карта колоды)
-    if (this.s.trumpCard) {
-      seen.add(this.s.trumpCard.data.rank + this.s.trumpCard.data.suit);
-    }
-    
+
+    // Cards in the discard pile were visible before they were turned face-down.
+    for (const c of this.s.discardPile || []) seen.add(c.data.rank + c.data.suit);
+
+    // The trump card is public from the start, even while it remains under the stock.
+    if (this.s.trumpCard) seen.add(this.s.trumpCard.data.rank + this.s.trumpCard.data.suit);
     return seen;
   }
 
   _getUnseenCards() {
     const seen = this._getSeenCards();
-    const deckType = this.s.app.deck?.type || '36';
-    const allRanks = deckType === '52' ? RANKS_52 : RANKS_36;
-    
+    const allRanks = Number(this.s.deckSize) === 52 ? RANKS_52 : RANKS_36;
     const unseen = [];
     for (const suit of SUITS) {
       for (const rank of allRanks) {
-        if (!seen.has(rank + suit)) {
-          unseen.push({ rank, suit });
-        }
+        if (!seen.has(rank + suit)) unseen.push({ rank, suit });
       }
     }
     return unseen;
   }
 
-  // Проверяет, может ли ИГРОК побить эту карту (в эндшпиле)
-  _isCardUnbeatable(card) {
-    if (this.deckLeft > 0) return false; // В колоде еще есть карты, гарантий нет
-    
+  /** Probability the hidden opponent hand contains at least one legal beater. */
+  _opponentCanBeatProbability(card) {
     const unseen = this._getUnseenCards();
-    // Если карт в "невидимых" больше, чем у игрока в руке + в колоде (должно быть 0, т.к. deckLeft === 0)
-    // Значит у игрока ровно `playerHandSize` карт.
-    
-    // Ищем, есть ли у игрока карта, которая побьет нашу
-    for (const u of unseen) {
-      const uCard = { data: u };
-      if (canBeat(uCard, card, this.trump)) {
-        return false; // Игрок МОЖЕТ побить
-      }
+    const handSize = Math.min(this.playerHandSize, unseen.length);
+    if (!handSize || !unseen.length) return 0;
+    const beaters = unseen.reduce((n, data) => n + (canBeat({ data }, card, this.trump) ? 1 : 0), 0);
+    if (!beaters) return 0;
+    if (unseen.length - beaters < handSize) return 1;
+
+    // Hypergeometric probability, without peeking at the opponent's actual hand.
+    let noBeater = 1;
+    for (let i = 0; i < handSize; i++) {
+      noBeater *= (unseen.length - beaters - i) / (unseen.length - i);
     }
-    return true; // Игрок НЕ МОЖЕТ побить
+    return 1 - noBeater;
+  }
+
+  _cardResourceCost(card, hand = this.hand) {
+    const rank = this.rank(card);
+    let cost = this.isTrump(card) ? 3.1 + rank * 0.11 : 0.45 + rank * 0.075;
+    const matching = hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
+    if (matching) cost += 1.1 + matching * 0.45; // preserve attack pairs/triples when practical
+    return cost;
+  }
+
+  // Exact hidden-hand inference is possible only after the stock is empty.
+  _isCardUnbeatable(card) {
+    if (this.deckLeft > 0) return false;
+    return this._opponentCanBeatProbability(card) === 0;
   }
 
   /* ============================================================
@@ -103,20 +102,38 @@ export class AI {
   }
 
   planDefenseAll(unbeaten) {
-    const hand = this.hand.slice();
-    const plan = [];
-    const sorted = unbeaten.slice().sort((a, b) => this.attackValue(b.atk) - this.attackValue(a.atk));
+    const ordered = unbeaten.map(pair => ({
+      pair,
+      candidates: this.hand.filter(card => canBeat(card, pair.atk, this.trump)),
+    }));
+    if (ordered.some(item => !item.candidates.length)) return null;
 
-    for (const pair of sorted) {
-      const beaters = hand
-        .filter(c => canBeat(c, pair.atk, this.trump))
-        .sort((a, b) => this.attackValue(a) - this.attackValue(b));
-      if (!beaters.length) return null;
-      const pick = beaters[0];
-      hand.splice(hand.indexOf(pick), 1);
-      plan.push({ atk: pair.atk, def: pick });
-    }
-    return plan;
+    // Resolve the hardest attack first, then search all legal assignments.
+    // This avoids a greedy early choice consuming the only card for a later attack.
+    ordered.sort((a, b) => a.candidates.length - b.candidates.length ||
+      this.attackValue(b.pair.atk) - this.attackValue(a.pair.atk));
+    let bestPlan = null;
+    let bestCost = Infinity;
+    const search = (index, remaining, picked, cost) => {
+      if (cost >= bestCost) return;
+      if (index === ordered.length) {
+        bestCost = cost;
+        bestPlan = picked.slice();
+        return;
+      }
+      const { pair, candidates } = ordered[index];
+      const choices = candidates.filter(card => remaining.has(card))
+        .sort((a, b) => this._cardResourceCost(a) - this._cardResourceCost(b));
+      for (const card of choices) {
+        remaining.delete(card);
+        picked.push({ atk: pair.atk, def: card });
+        search(index + 1, remaining, picked, cost + this._cardResourceCost(card));
+        picked.pop();
+        remaining.add(card);
+      }
+    };
+    search(0, new Set(this.hand), [], 0);
+    return bestPlan;
   }
 
   decide() {
@@ -140,6 +157,20 @@ export class AI {
     if (this.level === 1) {
       const sorted = pool.slice().sort((a, b) => this.rank(a) - this.rank(b));
       return { type: 'attack', card: sorted[0] };
+    }
+
+    if (this.level >= 3) {
+      const scoreLead = (card) => {
+        const sameRank = hand.filter(other => other !== card && other.data.rank === card.data.rank).length;
+        const usefulAdds = Math.min(sameRank, Math.max(0, this.playerHandSize - 1), 5);
+        const noBeater = 1 - this._opponentCanBeatProbability(card);
+        const endgameBonus = this.deckLeft === 0 && noBeater >= 0.999999 ? 3 : 0;
+        const pressureBonus = this.playerHandSize <= 2 ? noBeater * 1.5 : 0;
+        return noBeater * 4 + usefulAdds * 1.25 + endgameBonus + pressureBonus
+          - this._cardResourceCost(card) * 0.35;
+      };
+      const best = pool.slice().sort((a, b) => scoreLead(b) - scoreLead(a))[0];
+      return { type: 'attack', card: best };
     }
 
     if (this.deckLeft === 0) {
@@ -215,6 +246,19 @@ export class AI {
       pool = nonT.length ? nonT : cands;
     }
 
+    if (this.level >= 3 && this.deckLeft === 0 && pool.length) {
+      const best = pool.slice().sort((a, b) => {
+        const score = (card) => {
+          const sameRank = this.hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
+          const noBeater = 1 - this._opponentCanBeatProbability(card);
+          return noBeater * (this.playerHandSize <= 2 ? 5 : 2.5) + Math.min(sameRank, 3) * 0.5
+            - this._cardResourceCost(card) * 0.22;
+        };
+        return score(b) - score(a);
+      })[0];
+      return { type: 'attack', card: best, dump: false };
+    }
+
     let chance = this.deckLeft === 0 ? 0.95 : (this.deckLeft < 6 ? 0.85 : 0.75);
 
     if (this.level === 1) {
@@ -260,6 +304,19 @@ export class AI {
       if (!nonT.length) return { type: 'done' };
       nonT.sort((a, b) => this.attackValue(a) - this.attackValue(b));
       return { type: 'attack', card: nonT[0], dump: true };
+    }
+
+    if (this.level >= 3 && this.deckLeft === 0) {
+      const best = cands.slice().sort((a, b) => {
+        const score = (card) => {
+          const noBeater = 1 - this._opponentCanBeatProbability(card);
+          const sameRank = this.hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
+          return noBeater * (this.playerHandSize <= 2 ? 5 : 2.5) + Math.min(sameRank, 3) * 0.4
+            - this._cardResourceCost(card) * 0.2;
+        };
+        return score(b) - score(a);
+      })[0];
+      return { type: 'attack', card: best, dump: true };
     }
 
     const lowTrumps = cands.filter(c => this.isTrump(c) && this.rank(c) <= 10);
@@ -318,9 +375,7 @@ export class AI {
     // ============================================================
     // ЭНДШПИЛЬ (колода пуста): ЗАЩИЩАЕМСЯ ВСЕГДА
     // ============================================================
-    if (this.deckLeft === 0) {
-      // На эндшпиле ИИ использует видение, чтобы выбрать ЛУЧШУЮ карту для защиты.
-      // Если он может побить карту, которая гарантированно оставит его в выигрыше — он это сделает.
+    if (this.deckLeft === 0 && this.level < 3) {
       const first = plan[0];
       const pairIdx = r.table.findIndex(p => p.atk === first.atk);
       return { type: 'defense', card: first.def, pairIdx };
@@ -363,21 +418,15 @@ export class AI {
       if (plan.length >= 4) return { type: 'take' };
     }
     else {
-      // Level 3 (эксперт): экономный, со strategic take
-      if (trumpCost >= 2) return { type: 'take' };
-      if (trumpCost === 1 && trumpsInHand < 3) return { type: 'take' };
-
-      if (highCost >= 2) return { type: 'take' };
-      if (highCost === 1 && plan.length >= 2 && totalRank >= 22) return { type: 'take' };
-
-      if (pairBreaking >= 2) return { type: 'take' };
-      if (pairBreaking === 1 && Math.random() < 0.3) return { type: 'take' };
-
-      if (plan.length >= 3) return { type: 'take' };
-
-      if (plan.length === 1 && trumpCost === 0 && Math.random() < 0.15) {
-        return { type: 'take' };
-      }
+      // Expert compares the resource cost of a legal defense with the likely
+      // cost of taking. It no longer takes merely because one or two trumps
+      // are involved, and protects a near-empty hand in the endgame.
+      const defenseCost = plan.reduce((sum, item) => sum + this._cardResourceCost(item.def), 0);
+      let takeCost = 3.2 + plan.length * 0.8 + (this.deckLeft > 0 ? 0.6 : 0);
+      if (this.playerHandSize <= 2) takeCost += 2.4;
+      if (this.deckLeft === 0 && this.hand.length <= this.playerHandSize + 1) takeCost += 2.0;
+      if (this.hand.length <= 2) takeCost += 1.5;
+      if (defenseCost > takeCost) return { type: 'take' };
     }
 
     const first = plan[0];

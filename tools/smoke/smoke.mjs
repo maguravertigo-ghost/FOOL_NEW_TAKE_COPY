@@ -274,6 +274,53 @@ await step('audio engine plays and pauses music using Web Audio only', async () 
   engine.pauseMusic();
 });
 
+await step('expert AI counts public discards and does not peek at hidden cards', async () => {
+  const { AI } = await import('file://' + path.join(ROOT, 'js/game/ai.js'));
+  const { RANKS_36, RANKS_52, SUITS } = await import('file://' + path.join(ROOT, 'js/game/constants.js'));
+  const makeCard = (rank, suit) => ({ data: { rank, suit } });
+  const all36 = SUITS.flatMap(suit => RANKS_36.map(rank => ({ rank, suit })));
+  const target = makeCard('K', 'clubs');
+  const onlyPossibleBeater = makeCard('A', 'clubs');
+  const knownDiscard = all36
+    .filter(c => !(c.rank === 'K' && c.suit === 'clubs') && !(c.rank === 'A' && c.suit === 'clubs'))
+    .map(c => makeCard(c.rank, c.suit));
+  const session = {
+    deckSize: 36, trump: 'hearts', trumpCard: null, discardPile: knownDiscard,
+    round: { table: [{ atk: target, def: null }] },
+    app: { accordionCpu: { cards: [] }, accordionPlayer: { cards: [onlyPossibleBeater] } },
+    _totalRemaining: () => 0, _defenderHandSize: () => 0,
+  };
+  const expert = new AI(session, { level: 3 });
+  if (expert._getUnseenCards().length !== 1 || expert._opponentCanBeatProbability(target) !== 1 || expert._isCardUnbeatable(target)) {
+    throw new Error('AI did not infer the one possible beater from public card knowledge');
+  }
+  session.discardPile.push(onlyPossibleBeater);
+  session.app.accordionPlayer.cards = [];
+  if (expert._getUnseenCards().length !== 0 || !expert._isCardUnbeatable(target)) {
+    throw new Error('AI failed to recognize a card as unbeatable after all beaters were publicly discarded');
+  }
+  session.deckSize = 52;
+  session.round.table = [];
+  session.discardPile = [];
+  if (expert._getUnseenCards().length !== RANKS_52.length * SUITS.length) throw new Error('52-card unseen-card set is incomplete');
+
+  const defenseSession = {
+    deckSize: 36, trump: 'hearts', trumpCard: null, discardPile: [], translateMode: false,
+    round: { phase: 'D_ACT', anyBeaten: false, table: [{ atk: makeCard('6', 'clubs'), def: null }] },
+    app: { accordionCpu: { cards: [makeCard('7', 'clubs')] }, accordionPlayer: { cards: Array.from({ length: 5 }, () => makeCard('9', 'diamonds')) } },
+    _totalRemaining: () => 12, _defenderHandSize: () => 1,
+  };
+  if (new AI(defenseSession, { level: 3 })._decideDefense().type !== 'defense') {
+    throw new Error('expert unnecessarily took a single attack despite a cheap legal defense');
+  }
+  defenseSession.round.table.push({ atk: makeCard('6', 'diamonds'), def: null });
+  defenseSession.app.accordionCpu.cards = [makeCard('A', 'hearts'), makeCard('K', 'hearts')];
+  defenseSession._totalRemaining = () => 0;
+  if (new AI(defenseSession, { level: 3 })._decideDefense().type !== 'take') {
+    throw new Error('expert did not preserve an excessive trump cost with a strategic take');
+  }
+});
+
 await step('hand card hit-test takes priority over overlapping action button', async () => {
   const { GameSession } = await import('file://' + path.join(ROOT, 'js/game/game_session.js'));
   const session = Object.create(GameSession.prototype);
