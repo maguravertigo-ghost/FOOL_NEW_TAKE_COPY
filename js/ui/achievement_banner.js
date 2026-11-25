@@ -1,6 +1,48 @@
 import { ASSETS } from '../assets.js';
 import { t } from '../i18n/index.js';
 
+const activeTimers = new Set();
+let adsPaused = false;
+let gameIsActive = false;
+let frameId = 0;
+let lastFrameAt = 0;
+
+function tick(now) {
+  if (!lastFrameAt) lastFrameAt = now;
+  const delta = Math.min(250, now - lastFrameAt);
+  lastFrameAt = now;
+  const isGameOver = !!document.getElementById('game-over');
+  const multiplier = gameIsActive && !isGameOver ? 2 : 1;
+  const suspended = adsPaused || document.hidden;
+
+  for (const timer of [...activeTimers]) {
+    if (suspended) continue;
+    timer.remaining -= delta * multiplier;
+    if (timer.remaining <= 0) {
+      activeTimers.delete(timer);
+      timer.node.classList.add('ach-banner--out');
+      setTimeout(() => timer.node.remove(), 600);
+    }
+  }
+  if (activeTimers.size) frameId = requestAnimationFrame(tick);
+  else { frameId = 0; lastFrameAt = 0; }
+}
+
+function registerTimedBanner(node, parent, duration) {
+  // A fresh unlock restarts the visible achievement window, so stacked unlocks
+  // are not lost behind the previous notification's timeout.
+  for (const timer of activeTimers) timer.remaining = duration;
+  parent.appendChild(node);
+  activeTimers.add({ node, remaining: duration });
+  if (!frameId) frameId = requestAnimationFrame(tick);
+  return node;
+}
+
+export function setAchievementTimerState({ paused, inGame } = {}) {
+  if (typeof paused === 'boolean') adsPaused = paused;
+  if (typeof inGame === 'boolean') gameIsActive = inGame;
+}
+
 export function createAchievementBanner(id) {
   const el = document.createElement('div');
   el.className = 'ach-banner';
@@ -30,14 +72,14 @@ export function createAchievementBannerGroup(ids) {
   return group;
 }
 
-/** Show a floating achievement over the scene (e.g. after a menu purchase). */
 export function showFloatingAchievement(id, duration = 10000) {
+  const scene = document.getElementById('scene');
+  if (!scene) return null;
   const banner = createAchievementBanner(id);
   banner.classList.add('ach-banner--floating');
-  document.getElementById('scene').appendChild(banner);
+  return registerTimedBanner(banner, scene, duration);
+}
 
-  setTimeout(() => {
-    banner.classList.add('ach-banner--out');
-    setTimeout(() => banner.remove(), 600);
-  }, duration);
+export function showTimedAchievementNode(node, parent, duration = 10000) {
+  return registerTimedBanner(node, parent, duration);
 }

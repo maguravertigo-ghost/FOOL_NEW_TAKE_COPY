@@ -24,7 +24,7 @@ import { showMessage } from '../ui/message_overlay.js';
 import { t } from '../i18n/index.js';
 
 import { AchievementManager } from './achievements.js';
-import { createAchievementBannerGroup } from '../ui/achievement_banner.js';
+import { createAchievementBannerGroup, showTimedAchievementNode, setAchievementTimerState } from '../ui/achievement_banner.js';
 //import { addTotalEpaulettes } from './progress.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -1298,10 +1298,11 @@ else                           this._jokerFrame('five');  // ничья
 
   el.style.display = 'flex';
   document.getElementById('scene').appendChild(el);
+  setAchievementTimerState({ inGame: false });
   
   // Вставляем баннер абсолютным слоем сверху
   if (achBannerNode) {
-    el.appendChild(achBannerNode);
+    showTimedAchievementNode(achBannerNode, el, 10000);
   }
 
   // ---- Клавиатурная / ТВ навигация в окне результатов ----

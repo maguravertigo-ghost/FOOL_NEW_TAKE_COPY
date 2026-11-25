@@ -2012,7 +2012,7 @@ _confirmBuy(root, key) {
             
             audio.playSfx('buy');
             this._applyStyleItem(cat, item);
-            if (checkCollectorAchievement()) showFloatingAchievement('collector', 8000);
+            if (checkCollectorAchievement()) showFloatingAchievement('collector', 10000);
             this._refreshStats();
             this._renderShop(root, this._shopCategory);
             showMessage(t('shop.buy.adSuccess'), { title: t('shop.buy.adTitle') });
@@ -2043,7 +2043,7 @@ showConfirm(
 		  }
 		  audio.playSfx('buy');
 		  this._applyStyleItem(cat, item);
-          if (checkCollectorAchievement()) showFloatingAchievement('collector', 8000);
+          if (checkCollectorAchievement()) showFloatingAchievement('collector', 10000);
 		  this._refreshStats();
 		  this._renderShop(root, this._shopCategory);
 		},
@@ -2575,7 +2575,7 @@ _buildPreviewField(container) {
 
       const afterClaim = () => {
         res.newlyUnlocked.forEach((id, i) => {
-          setTimeout(() => showFloatingAchievement(id, 8000), i * 500);
+          setTimeout(() => showFloatingAchievement(id, 10000), i * 500);
         });
         if (res.stageCompleted && !res.progressionComplete) {
           const unlocked = () => {

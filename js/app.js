@@ -18,6 +18,7 @@ import { DebugOverlay } from './debug/debug_overlay.js';
 import { installLayoutTuner } from './dev/layout_tuner.js';
 import { performanceProfiler } from './dev/performance_profiler.js';
 import { HUD } from './ui/hud.js';
+import { setAchievementTimerState } from './ui/achievement_banner.js';
 import { PauseOverlay } from './ui/pause_overlay.js';
 import { ScreenFade } from './ui/screen_fade.js';
 import { MainMenu } from './ui/main_menu.js';
@@ -276,6 +277,7 @@ class App {
 
   pauseForAd() {
 	this._inAd = true;
+    setAchievementTimerState({ paused: true });
     audio.pauseAllSfx();
     audio.pauseMusic();
     if (this.interp) this.interp.pause();
@@ -285,6 +287,7 @@ class App {
 
   resumeFromAd() {
 	this._inAd = false;
+    setAchievementTimerState({ paused: false });
     if (this.interp) this.interp.resume();
     audio.resumeAllSfx();
     audio.resumeMusic();
@@ -679,6 +682,7 @@ async _startGameFromMenu(mode) {
       firstMove,
     });
 
+    setAchievementTimerState({ inGame: true });
     this.session.start().catch(err => console.error('[session] failed:', err));
     ysdk.gameplayStart();
     this._sessionReady = true;
@@ -714,6 +718,7 @@ async _startGameFromMenu(mode) {
 
   async _exitToMenu() {
     if (this._transitioning) return;
+    setAchievementTimerState({ inGame: false });
     this._transitioning = true;
     this._sessionReady = false;
 
