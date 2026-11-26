@@ -2667,8 +2667,26 @@ _repositionActionButton() {
   const jokerCx    = W - jokerRight - bw / 2;
   const jokerLeft  = jokerCx - bw / 2;
 
-  const btnTop = yPx + (isMobile ? 20 : 40);
-  this.actionBtn.style.left   = (r.left + jokerLeft) + 'px';
+  let btnLeft = jokerLeft;
+  let btnTop = yPx + (isMobile ? 20 : 40);
+  const handCards = this.app.accordionPlayer?.cards || [];
+  if (handCards.length) {
+    const rightmost = handCards.reduce((best, card) =>
+      !best || card.x > best.x ? card : best, null);
+    const handBounds = rightmost?.getBounds?.();
+    if (handBounds) {
+      const gap = 8;
+      // Keep the action control outside the card's clickable corner whenever
+      // there is room; otherwise place it above the hand. Input still gives
+      // card hit-testing priority for any remaining overlap.
+      const rightSide = handBounds.right + gap;
+      if (W - rightSide >= bw + 4) btnLeft = rightSide;
+      else btnTop = Math.min(btnTop, handBounds.top - btnH - gap);
+      btnTop = Math.max(4, btnTop);
+      btnLeft = Math.max(4, Math.min(btnLeft, W - bw - 4));
+    }
+  }
+  this.actionBtn.style.left   = (r.left + btnLeft) + 'px';
   this.actionBtn.style.top    = (r.top  + btnTop)    + 'px';
   this.actionBtn.style.width  = bw + 'px';
   this.actionBtn.style.height = btnH + 'px';
@@ -2709,6 +2727,7 @@ _repositionActionButton() {
       this.actionBtn.disabled = true;
       this.actionBtn.dataset.state = 'wait';
       if (this._kbdFocusOnButton) this._clearKbdFocus();
+      this._repositionActionButton();
       return;
     }
 
@@ -2742,6 +2761,7 @@ _repositionActionButton() {
     if (this._kbdFocusOnButton && this.actionBtn.disabled) {
       this._clearKbdFocus();
     }
+    this._repositionActionButton();
   }
 
 _jokerFrame(name) {

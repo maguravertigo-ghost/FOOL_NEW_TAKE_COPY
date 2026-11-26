@@ -349,6 +349,18 @@ await step('hand card hit-test takes priority over overlapping action button', a
   if (actionClicks !== 1) throw new Error('uncovered action button tap was not routed to action');
   const css = fs.readFileSync(path.join(ROOT, 'css/scene-base.css'), 'utf8');
   if (!/#action-btn\s*\{[^}]*pointer-events:\s*none/s.test(css)) throw new Error('action button still intercepts raw pointer events');
+
+  const layoutSession = Object.create(GameSession.prototype);
+  layoutSession.app = {
+    sceneEl: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 600 }) },
+    accordionPlayer: { cards: [{ x: 500, getBounds: () => ({ left: 460, right: 540, top: 500, bottom: 600 }) }] },
+  };
+  layoutSession.markers = { tryGet: () => ({ x: 0.7, y: 0.5 }) };
+  layoutSession.actionBtn = { style: {} };
+  layoutSession.aiMessageEl = { style: {} };
+  layoutSession.joker = null;
+  layoutSession._repositionActionButton();
+  if (parseFloat(layoutSession.actionBtn.style.left) < 548) throw new Error('action button was not positioned to the right of the hand corner');
 });
 
 await step('rewarded SDK callback opens and closes ad lifecycle in order', async () => {
@@ -367,6 +379,7 @@ await step('rewarded SDK callback opens and closes ad lifecycle in order', async
 
 await step('achievement priority, exact pogon count and collector unlock', async () => {
   const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+  const banners = await import('file://' + path.join(ROOT, 'js/ui/achievement_banner.js'));
   const { AchievementManager, checkCollectorAchievement } = await import('file://' + path.join(ROOT, 'js/game/achievements.js'));
   const { ASSETS } = await import('file://' + path.join(ROOT, 'js/assets.js'));
   const original = JSON.parse(JSON.stringify(progress.Progress));
@@ -381,6 +394,14 @@ await step('achievement priority, exact pogon count and collector unlock', async
     if (progress.getPendingAchievementNotices().length) throw new Error('displayed achievement notices were not acknowledged');
     const firstAndThree = AchievementManager.check({ winner: 'player', pogonsThrown: 3 });
     if (firstAndThree.join(',') !== 'first_win,pogon_3') throw new Error(`wrong achievement order: ${firstAndThree}`);
+    const unlockPair = banners.createAchievementBannerGroup(firstAndThree);
+    if (unlockPair.children.length !== 2 || unlockPair.children[1].style.animationDelay !== '500ms') {
+      throw new Error('first-win and pogon unlocks are not shown as a delayed two-achievement sequence');
+    }
+    progress.queueAchievementNotices(firstAndThree);
+    if (progress.getPendingAchievementNotices().join(',') !== 'first_win,pogon_3') {
+      throw new Error('the complete achievement pair was not queued for menu replay');
+    }
     for (const id of ['pogon_1', 'pogon_2', 'pogon_4']) {
       if (progress.isAchievementUnlocked(id)) throw new Error(`non-exact pogon achievement unlocked: ${id}`);
     }

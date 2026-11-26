@@ -66,7 +66,7 @@ export function createAchievementBannerGroup(ids) {
   ids.forEach((id, i) => {
     const banner = createAchievementBanner(id);
     banner.classList.add('ach-banner--grouped');
-    banner.style.animationDelay = `${i * 320}ms`;
+    banner.style.animationDelay = `${i * 500}ms`;
     group.appendChild(banner);
   });
   return group;

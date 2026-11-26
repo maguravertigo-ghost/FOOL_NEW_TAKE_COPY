@@ -285,8 +285,8 @@ body.is-mobile .card--stack-sub {
    ================================================================== */
 #action-btn {
   position: fixed;
-  z-index: 110;
-  pointer-events: none; /* pointer input routes through scene hit-testing, cards win overlaps */
+  z-index: 105;
+  pointer-events: none; /* keep pointer routing in scene hit-testing; rendered below the hand */
   display: none;
   font: 800 calc(36px * var(--ui)) system-ui, sans-serif;
   letter-spacing: calc(1px * var(--ui));
