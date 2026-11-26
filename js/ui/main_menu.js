@@ -30,7 +30,7 @@ import {
 import { t, getLang, getAvailableLangs } from '../i18n/index.js';
 import { Tutorial } from './tutorial.js';
 
-import { popPendingAchievement, peekPendingAchievement, drainAchievementNotices } from '../game/progress.js';
+import { popPendingAchievement, peekPendingAchievement, getPendingAchievementNotices, acknowledgeAchievementNotices } from '../game/progress.js';
 import { showFloatingAchievement, showFloatingAchievementGroup } from './achievement_banner.js';
 import { checkCollectorAchievement } from '../game/achievements.js';
 
@@ -3098,16 +3098,25 @@ if (claimed) {
   }
 
   _checkPendingAchievement() {
-    if (!peekPendingAchievement() && !(Progress.pendingAchievementNotices || []).length) return;
+    if (this._achievementReplayScheduled) return;
+    if (!peekPendingAchievement() && !getPendingAchievementNotices().length) return;
+    this._achievementReplayScheduled = true;
 
-    // Let the menu finish rendering, then replay every match unlock as a fresh drop.
+    // Wait until the menu is actually visible. Keep the persisted queue intact
+    // until the notification has been attached to the scene.
     setTimeout(() => {
-      const ids = drainAchievementNotices();
+      this._achievementReplayScheduled = false;
+      if (this.el.style.display === 'none' || !document.getElementById('scene')) return;
+
+      const ids = getPendingAchievementNotices();
       const pending = peekPendingAchievement();
-      if (pending) {
-        ids.push(popPendingAchievement());
+      if (pending) ids.push(pending);
+      const banner = showFloatingAchievementGroup(ids, 10000);
+      if (!banner) return;
+      if (ids.length > 0) {
+        acknowledgeAchievementNotices(ids.filter(id => getPendingAchievementNotices().includes(id)));
       }
-      if (ids.length) showFloatingAchievementGroup(ids, 10000);
+      if (pending) popPendingAchievement();
     }, 600);
   }
 

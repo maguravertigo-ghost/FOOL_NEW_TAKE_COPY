@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS = {
   deckSize:      36,
   handLayout:    'fan',
   cardStyle:     'wide-grid',
+  cardStyleVersion: 1,
   suitStyle:     'default',
   shirtStyle:    0,
   tableStyle:    0,
@@ -21,7 +22,12 @@ function load() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    // Migrate old saved narrow-rank choices once: keep the layout/pip design,
+    // but switch its rank artwork to the wider, more legible set by default.
+    if (!parsed.cardStyleVersion && typeof parsed.cardStyle === 'string' && !parsed.cardStyle.startsWith('wide-')) {
+      parsed.cardStyle = 'wide-grid';
+    }
+    return { ...DEFAULT_SETTINGS, ...parsed, cardStyleVersion: 1 };
   } catch { return { ...DEFAULT_SETTINGS }; }
 }
 

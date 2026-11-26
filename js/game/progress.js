@@ -468,12 +468,17 @@ export function queueAchievementNotices(ids) {
   if (ids && ids.length) saveProgress();
 }
 
-export function drainAchievementNotices() {
-  const ids = Array.isArray(Progress.pendingAchievementNotices)
-    ? Progress.pendingAchievementNotices.splice(0)
+export function getPendingAchievementNotices() {
+  return Array.isArray(Progress.pendingAchievementNotices)
+    ? Progress.pendingAchievementNotices.slice()
     : [];
-  if (ids.length) saveProgress();
-  return ids;
+}
+
+export function acknowledgeAchievementNotices(ids) {
+  if (!Array.isArray(Progress.pendingAchievementNotices)) return;
+  const acknowledged = new Set(ids || []);
+  Progress.pendingAchievementNotices = Progress.pendingAchievementNotices.filter(id => !acknowledged.has(id));
+  saveProgress();
 }
 
 export function setPendingAchievement(id) {
