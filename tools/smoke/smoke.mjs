@@ -586,7 +586,17 @@ await step('пауза: фокус Продолжить → громкость �
   if (!document.querySelector('#pause-overlay [data-action="resume"].kbd-focus')) throw new Error('↑ с выхода должен возвращать на Продолжить');
 });
 await step('закрыть паузу', async () => { app._closePause(); await new Promise(r => setTimeout(r, 100)); });
-await step('выход в меню', async () => { await app._exitToMenu(); await new Promise(r => setTimeout(r, 400)); });
+await step('выход в меню повторно показывает все заработанные достижения', async () => {
+  const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+  progress.Progress.pendingAchievementNotices = [];
+  progress.queueAchievementNotices(['first_win', 'pogon_1']);
+  await app._exitToMenu();
+  await new Promise(r => setTimeout(r, 700));
+  const replay = document.querySelector('.ach-banner-group.ach-banner--floating-group');
+  if (!replay || replay.querySelectorAll('.ach-banner--grouped').length !== 2) {
+    throw new Error('menu did not replay both queued achievements');
+  }
+});
 
 await step('повторный запуск матча', async () => {
   await app._startGameFromMenu('perevodnoy');
