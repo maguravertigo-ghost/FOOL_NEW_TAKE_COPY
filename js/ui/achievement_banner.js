@@ -7,13 +7,19 @@ let gameIsActive = false;
 let frameId = 0;
 let lastFrameAt = 0;
 
+export function shouldPauseAchievementTimers() {
+  return adsPaused || document.hidden || !!document.querySelector('.msg-overlay');
+}
+
 function tick(now) {
   if (!lastFrameAt) lastFrameAt = now;
   const delta = Math.min(250, now - lastFrameAt);
   lastFrameAt = now;
   const isGameOver = !!document.getElementById('game-over');
   const multiplier = gameIsActive && !isGameOver ? 2 : 1;
-  const suspended = adsPaused || document.hidden;
+  // Modal dialogs (notably the first-win style-points dialog) cover the toast;
+  // do not burn its visible-time budget while the player cannot see it.
+  const suspended = shouldPauseAchievementTimers();
 
   for (const timer of [...activeTimers]) {
     if (suspended) continue;

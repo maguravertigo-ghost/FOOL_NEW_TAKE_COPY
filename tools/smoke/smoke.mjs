@@ -384,6 +384,13 @@ await step('achievement priority, exact pogon count and collector unlock', async
   const { ASSETS } = await import('file://' + path.join(ROOT, 'js/assets.js'));
   const original = JSON.parse(JSON.stringify(progress.Progress));
   try {
+    if (banners.shouldPauseAchievementTimers()) throw new Error('achievement timer unexpectedly paused');
+    const styleModal = document.createElement('div');
+    styleModal.className = 'msg-overlay';
+    document.body.appendChild(styleModal);
+    if (!banners.shouldPauseAchievementTimers()) throw new Error('style-points modal did not pause the achievement timer');
+    styleModal.remove();
+    if (banners.shouldPauseAchievementTimers()) throw new Error('achievement timer remained paused after closing modal');
     progress.Progress.stats.wins = 1;
     progress.Progress.achievements = {};
     progress.Progress.pendingAchievementNotices = [];
