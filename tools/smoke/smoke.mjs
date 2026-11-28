@@ -360,7 +360,14 @@ await step('hand card hit-test takes priority over overlapping action button', a
   layoutSession.aiMessageEl = { style: {} };
   layoutSession.joker = null;
   layoutSession._repositionActionButton();
-  if (parseFloat(layoutSession.actionBtn.style.left) < 548) throw new Error('action button was not positioned to the right of the hand corner');
+  const fixedLeft = layoutSession.actionBtn.style.left;
+  const fixedTop = layoutSession.actionBtn.style.top;
+  layoutSession.app.accordionPlayer.cards = [{ x: 220, getBounds: () => ({ left: 180, right: 260, top: 300, bottom: 400 }) }];
+  layoutSession._repositionActionButton();
+  if (layoutSession.actionBtn.style.left !== fixedLeft || layoutSession.actionBtn.style.top !== fixedTop) {
+    throw new Error('player action button moved when hand cards changed');
+  }
+  if (!/#action-btn\s*\{[^}]*z-index:\s*110/s.test(css)) throw new Error('action button must layer above discard and below hand');
 });
 
 await step('rewarded SDK callback opens and closes ad lifecycle in order', async () => {
