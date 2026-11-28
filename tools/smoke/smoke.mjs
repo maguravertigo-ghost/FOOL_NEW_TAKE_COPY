@@ -316,8 +316,32 @@ await step('expert AI counts public discards and does not peek at hidden cards',
   defenseSession.round.table.push({ atk: makeCard('6', 'diamonds'), def: null });
   defenseSession.app.accordionCpu.cards = [makeCard('A', 'hearts'), makeCard('K', 'hearts')];
   defenseSession._totalRemaining = () => 0;
-  if (new AI(defenseSession, { level: 3 })._decideDefense().type !== 'take') {
-    throw new Error('expert did not preserve an excessive trump cost with a strategic take');
+  if (new AI(defenseSession, { level: 3 })._decideDefense().type !== 'defense') {
+    throw new Error('expert failed to defend a legal endgame table');
+  }
+
+  defenseSession.round.table = [{ atk: makeCard('K', 'clubs'), def: null }];
+  defenseSession.app.accordionCpu.cards = [makeCard('A', 'hearts')];
+  defenseSession._totalRemaining = () => 8;
+  if (new AI(defenseSession, { level: 3 })._decideDefense().type !== 'defense') {
+    throw new Error('expert took a single beatable attack instead of defending with one trump');
+  }
+
+  const originalRandom = Math.random;
+  try {
+    Math.random = () => 0.5;
+    defenseSession.round.table = [{ atk: makeCard('6', 'clubs'), def: null }];
+    defenseSession.app.accordionCpu.cards = [makeCard('7', 'clubs')];
+    if (new AI(defenseSession, { level: 1 })._decideDefense().type !== 'defense') {
+      throw new Error('beginner took a simple attack it could cheaply beat');
+    }
+    defenseSession._totalRemaining = () => 0;
+    Math.random = () => 0.01;
+    if (new AI(defenseSession, { level: 1 })._decideDefense().type !== 'defense') {
+      throw new Error('beginner randomly took a beatable endgame attack');
+    }
+  } finally {
+    Math.random = originalRandom;
   }
 });
 

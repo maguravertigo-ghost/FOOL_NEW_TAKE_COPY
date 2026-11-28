@@ -332,10 +332,13 @@ export class AI {
     if (!unbeaten.length) return { type: 'take' };
 
     if (this.level === 1) {
-      if (Math.random() < 0.25) return { type: 'take' };
       const atk = unbeaten[0].atk;
       const cands = this.hand.filter(c => canBeat(c, atk, this.trump));
       if (!cands.length) return { type: 'take' };
+      // Beginner makes occasional mistakes, but should not routinely take a
+      // simple attack it can beat. Most of its difficulty comes from weaker
+      // attack/defense choices elsewhere, not refusing every hand.
+      if (this.deckLeft > 0 && Math.random() < 0.08) return { type: 'take' };
       const pairIdx = r.table.findIndex(p => p.atk === atk);
       return { type: 'defense', card: cands[0], pairIdx };
     }
@@ -375,7 +378,9 @@ export class AI {
     // ============================================================
     // ЭНДШПИЛЬ (колода пуста): ЗАЩИЩАЕМСЯ ВСЕГДА
     // ============================================================
-    if (this.deckLeft === 0 && this.level < 3) {
+    if (this.deckLeft === 0) {
+      // With no stock, taking only feeds cards to the hand and gives away
+      // tempo. If the AI can legally beat the table, it does so at every level.
       const first = plan[0];
       const pairIdx = r.table.findIndex(p => p.atk === first.atk);
       return { type: 'defense', card: first.def, pairIdx };
@@ -422,7 +427,7 @@ export class AI {
       // cost of taking. It no longer takes merely because one or two trumps
       // are involved, and protects a near-empty hand in the endgame.
       const defenseCost = plan.reduce((sum, item) => sum + this._cardResourceCost(item.def), 0);
-      let takeCost = 3.2 + plan.length * 0.8 + (this.deckLeft > 0 ? 0.6 : 0);
+      let takeCost = 4.8 + plan.length * 1.1;
       if (this.playerHandSize <= 2) takeCost += 2.4;
       if (this.deckLeft === 0 && this.hand.length <= this.playerHandSize + 1) takeCost += 2.0;
       if (this.hand.length <= 2) takeCost += 1.5;
