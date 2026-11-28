@@ -5,6 +5,7 @@ export const TR = {
   'menu.wins':            'KAZANMA:',
   'menu.losses':          'KAYIP:',
   'menu.draws':           'BERABERE:',
+  'menu.winStreak':       'EN UZUN SERİ:',
   'menu.stylePoints':     'STİL PUANI:',
   'menu.help':            'NASIL OYNANIR',
   'menu.settings':        'AYARLAR',

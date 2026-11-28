@@ -5,6 +5,7 @@ export const RU = {
   'menu.wins':            'ПОБЕД:',
   'menu.losses':          'ПОРАЖЕНИЙ:',
   'menu.draws':           'НИЧЬИХ:',
+  'menu.winStreak':       'ЛУЧШАЯ СЕРИЯ:',
   'menu.stylePoints':     'ОЧКИ СТИЛЯ:',
   'menu.help':            'КАК ИГРАТЬ',
   'menu.settings':        'НАСТРОЙКИ',

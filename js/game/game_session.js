@@ -1513,13 +1513,13 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
     let actionKey   = null;
     let targetLevel = null;
 
-    if (lvl === 1 && result === 'player' && streak.wins >= 2) {
+    if (lvl === 1 && result === 'player' && streak.wins === 2) {
       questionKey = 'feedback.easy_win';    actionKey = 'feedback.try_normal'; targetLevel = 2;
-    } else if (lvl === 3 && result === 'cpu' && streak.losses >= 2) {
+    } else if (lvl === 3 && result === 'cpu' && streak.losses === 2) {
       questionKey = 'feedback.expert_lose'; actionKey = 'feedback.try_normal'; targetLevel = 2;
-    } else if (lvl === 2 && result === 'player' && streak.wins >= 3) {
+    } else if (lvl === 2 && result === 'player' && streak.wins === 2) {
       questionKey = 'feedback.normal_win';  actionKey = 'feedback.try_expert'; targetLevel = 3;
-    } else if (lvl === 2 && result === 'cpu' && streak.losses >= 3) {
+    } else if (lvl === 2 && result === 'cpu' && streak.losses === 2) {
       questionKey = 'feedback.normal_lose'; actionKey = 'feedback.try_easy';   targetLevel = 1;
     }
 

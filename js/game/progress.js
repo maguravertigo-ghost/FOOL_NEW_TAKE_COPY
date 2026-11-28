@@ -20,7 +20,7 @@ function defaultState() {
   return {
     stylePoints: 0,
     quests,
-    stats: { games: 0, wins: 0, losses: 0, draws: 0 },
+    stats: { games: 0, wins: 0, losses: 0, draws: 0, currentWinStreak: 0, bestWinStreak: 0 },
 	foolToken: null,
 	firstWinShown: false,
 	shopIntroSeen: false,
@@ -109,15 +109,21 @@ export function recordOutcome(winner, aiLevel) {
   else if (winner === 'cpu') s.losses++;
   else s.draws++;
 
-  // Обновляем streak по сложности
+  // Overall consecutive wins (independent of difficulty changes).
+  if (winner === 'player') {
+    s.currentWinStreak = (s.currentWinStreak || 0) + 1;
+    s.bestWinStreak = Math.max(s.bestWinStreak || 0, s.currentWinStreak);
+  } else {
+    s.currentWinStreak = 0;
+  }
+
+  // Difficulty suggestion streaks are tracked per level; a draw breaks both.
   const lvl = aiLevel || 1;
   if (!Progress.streak) Progress.streak = { level: lvl, wins: 0, losses: 0 };
-  if (Progress.streak.level !== lvl) {
-    Progress.streak = { level: lvl, wins: 0, losses: 0 };
-  }
+  if (Progress.streak.level !== lvl) Progress.streak = { level: lvl, wins: 0, losses: 0 };
   if (winner === 'player')      { Progress.streak.wins++;   Progress.streak.losses = 0; }
   else if (winner === 'cpu')    { Progress.streak.losses++; Progress.streak.wins   = 0; }
-  // draw — streak не трогаем
+  else                          { Progress.streak.wins = 0; Progress.streak.losses = 0; }
 
   saveProgress();
 }
@@ -350,7 +356,7 @@ export function resetQuests() {
  */
 export function resetAll() {
   Progress.stylePoints = 0;
-  Progress.stats = { games: 0, wins: 0, losses: 0, draws: 0 };
+  Progress.stats = { games: 0, wins: 0, losses: 0, draws: 0, currentWinStreak: 0, bestWinStreak: 0 };
 
   Progress.quests = {};
   for (const r of ORDER_52) Progress.quests[r] = { progress: 0, claimed: 0 };
@@ -375,6 +381,7 @@ export function resetAll() {
   Progress.achievements = {};
   
   Progress.pendingAchievements = [];
+  Progress.pendingAchievementNotices = [];
   Progress.totalEpaulettes = 0;
   
   saveProgress();

@@ -73,6 +73,7 @@ export class MainMenu {
     <div class="mm-stat-row" data-stat="wins"><span>${t('menu.wins')}</span><b>${Progress.stats.wins}</b></div>
     <div class="mm-stat-row" data-stat="losses"><span>${t('menu.losses')}</span><b>${Progress.stats.losses}</b></div>
     <div class="mm-stat-row" data-stat="draws"><span>${t('menu.draws')}</span><b>${Progress.stats.draws}</b></div>
+    <div class="mm-stat-row" data-stat="bestWinStreak"><span>${t('menu.winStreak')}</span><b>${Progress.stats.bestWinStreak || 0}</b></div>
   </div>
 </div>
 
@@ -511,6 +512,7 @@ _refreshStats() {
   set('wins',   Progress.stats.wins);
   set('losses', Progress.stats.losses);
   set('draws',  Progress.stats.draws);
+  set('bestWinStreak', Progress.stats.bestWinStreak || 0);
 
   const sp = this.el.querySelector('.mm-style-points__value');
   if (sp) sp.textContent = Progress.stylePoints;

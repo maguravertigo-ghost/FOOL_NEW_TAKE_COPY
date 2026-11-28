@@ -4,6 +4,7 @@ export const EN = {
   'menu.wins':            'WINS:',
   'menu.losses':          'LOSSES:',
   'menu.draws':           'DRAWS:',
+  'menu.winStreak':       'BEST WIN STREAK:',
   'menu.stylePoints':     'STYLE POINTS:',
   'menu.help':            'HOW TO PLAY',
   'menu.settings':        'SETTINGS',

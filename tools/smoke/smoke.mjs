@@ -209,6 +209,77 @@ await step('first-run settings match requested defaults', async () => {
   if (!progressUnderTest.purchases.design.includes(3)) throw new Error('широкий дизайн по умолчанию не открыт');
 });
 
+await step('win streak statistics persist and draws break consecutive streaks', async () => {
+  const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+  const originalStats = JSON.parse(JSON.stringify(progress.Progress.stats));
+  const originalStreak = JSON.parse(JSON.stringify(progress.Progress.streak));
+  try {
+    progress.Progress.stats = { games: 0, wins: 0, losses: 0, draws: 0, currentWinStreak: 0, bestWinStreak: 0 };
+    progress.Progress.streak = { level: 1, wins: 0, losses: 0 };
+    progress.recordOutcome('player', 1);
+    progress.recordOutcome('player', 1);
+    if (progress.Progress.stats.bestWinStreak !== 2) throw new Error('two consecutive wins not counted');
+    progress.recordOutcome('player', 2);
+    if (progress.Progress.stats.bestWinStreak !== 3) throw new Error('win streak incorrectly reset when difficulty changed');
+    progress.recordOutcome('cpu', 2);
+    if (progress.Progress.stats.currentWinStreak !== 0 || progress.Progress.stats.bestWinStreak !== 3) throw new Error('loss did not break current win streak or preserve best');
+    progress.recordOutcome('player', 1);
+    progress.recordOutcome('draw', 1);
+    if (progress.Progress.stats.currentWinStreak !== 0 || progress.Progress.streak.wins !== 0 || progress.Progress.streak.losses !== 0) {
+      throw new Error('draw did not break win/loss feedback streaks');
+    }
+  } finally {
+    progress.Progress.stats = originalStats;
+    progress.Progress.streak = originalStreak;
+    progress.saveProgress();
+  }
+});
+
+await step('difficulty suggestions trigger at two consecutive wins or losses only', async () => {
+  const { GameSession } = await import('file://' + path.join(ROOT, 'js/game/game_session.js'));
+  const { GameSettings, saveSettings } = await import('file://' + path.join(ROOT, 'js/game/settings.js'));
+  const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
+  const { t } = await import('file://' + path.join(ROOT, 'js/i18n/index.js'));
+  const oldLevel = GameSettings.aiLevel;
+  const oldStreak = JSON.parse(JSON.stringify(progress.Progress.streak));
+  const oldKeyboardMode = window.__lastInputWasKeyboard;
+  const resultNode = document.createElement('div');
+  resultNode.id = 'game-over';
+  document.body.appendChild(resultNode);
+  try {
+    window.__lastInputWasKeyboard = false;
+    const cases = [
+      { level: 1, result: 'player', wins: 2, losses: 0, action: 'feedback.try_normal' },
+      { level: 2, result: 'player', wins: 2, losses: 0, action: 'feedback.try_expert' },
+      { level: 2, result: 'cpu', wins: 0, losses: 2, action: 'feedback.try_easy' },
+      { level: 3, result: 'cpu', wins: 0, losses: 2, action: 'feedback.try_normal' },
+      { level: 3, result: 'player', wins: 2, losses: 0, action: null },
+      { level: 2, result: 'player', wins: 3, losses: 0, action: null },
+    ];
+    for (const item of cases) {
+      GameSettings.aiLevel = item.level;
+      progress.Progress.streak = { level: item.level, wins: item.wins, losses: item.losses };
+      resultNode.innerHTML = '';
+      const session = Object.create(GameSession.prototype);
+      session._gameOverButtons = [];
+      session._gameOverNavIdx = -1;
+      session._renderDifficultyFeedback(item.result);
+      const button = resultNode.querySelector('[data-action="change-diff"]');
+      if (!!button !== !!item.action) throw new Error(`wrong feedback at level ${item.level}, result ${item.result}`);
+      if (button && !button.textContent.toUpperCase().includes(t(item.action).toUpperCase())) {
+        throw new Error(`wrong target difficulty suggestion: ${button.textContent}`);
+      }
+    }
+  } finally {
+    resultNode.remove();
+    GameSettings.aiLevel = oldLevel;
+    progress.Progress.streak = oldStreak;
+    window.__lastInputWasKeyboard = oldKeyboardMode;
+    saveSettings();
+    progress.saveProgress();
+  }
+});
+
 await step('quest branches advance 36/52 then require exact minimum pogons', async () => {
   const progress = await import('file://' + path.join(ROOT, 'js/game/progress.js'));
   const original = JSON.parse(JSON.stringify(progress.Progress));
