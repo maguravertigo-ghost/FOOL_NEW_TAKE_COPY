@@ -137,13 +137,14 @@ export class HudLayout {
       const left  = this.px(22);
       const right = this.px(300);
       const top   = this.py(22);
-      const h     = this._topBlockH() * 0.85;
+      // Five statistics rows need more height than the original four-row block.
+      const h     = this.s(230);
       return { left, top, width: right - left, height: h };
     }
     const left  = this.px(22);
     const right = this.px(282);
     const top   = this.py(22);
-    const h     = this._topBlockH();
+    const h     = this.s(230);
     return { left, top, width: right - left, height: h };
   }
 

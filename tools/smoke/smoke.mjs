@@ -414,6 +414,28 @@ await step('expert AI counts public discards and does not peek at hidden cards',
   } finally {
     Math.random = originalRandom;
   }
+
+  const addSession = {
+    deckSize: 36, trump: 'hearts', trumpCard: null, discardPile: [], translateMode: false,
+    round: { phase: 'A_ADD', table: [{ atk: makeCard('6', 'spades'), def: null }] },
+    app: { accordionCpu: { cards: [makeCard('6', 'clubs'), makeCard('6', 'diamonds'), makeCard('7', 'spades')] }, accordionPlayer: { cards: Array.from({ length: 5 }, () => makeCard('9', 'diamonds')) } },
+    _totalRemaining: () => 8, _defenderHandSize: () => 5,
+  };
+  const tacticalExpert = new AI(addSession, { level: 3 });
+  tacticalExpert._opponentCanBeatProbability = card => card.data.suit === 'diamonds' ? 0.3 : 0.9;
+  const pressureDecision = tacticalExpert._decideAdd();
+  if (tacticalExpert._expertTactic() !== 'tactical' || pressureDecision.card?.data.suit !== 'diamonds') {
+    throw new Error(`expert did not choose the harder-to-beat pressure card: ${tacticalExpert._expertTactic()} ${JSON.stringify(pressureDecision)}`);
+  }
+  addSession.app.accordionCpu.cards.push(...Array.from({ length: 6 }, (_, i) => makeCard(String(7 + i), 'clubs')));
+  tacticalExpert._opponentCanBeatProbability = () => 0.9;
+  if (tacticalExpert._expertTactic() !== 'conserve' || tacticalExpert._decideAdd().type !== 'pass') {
+    throw new Error('expert did not switch to a conserving tactic while holding a large lead in cards');
+  }
+  addSession.app.accordionPlayer.cards = [makeCard('9', 'diamonds'), makeCard('10', 'diamonds')];
+  if (tacticalExpert._expertTactic() !== 'press' || tacticalExpert._decideAdd().type !== 'attack') {
+    throw new Error('expert did not press when opponent was nearly out of cards');
+  }
 });
 
 await step('hand card hit-test takes priority over overlapping action button', async () => {
@@ -525,6 +547,15 @@ await step('achievement priority, exact pogon count and collector unlock', async
   }
 });
 console.log('app создан:', !!app, '| меню в DOM:', !!document.querySelector('#main-menu, .mm-root, .menu'));
+
+await step('menu statistics block accommodates all five rows', async () => {
+  const { HudLayout } = await import('file://' + path.join(ROOT, 'js/ui/hud_layout.js'));
+  const layout = new HudLayout({ getBoundingClientRect: () => ({ width: 1366, height: 768 }) });
+  if (layout.rectStats().height < 230) throw new Error('desktop stats block has insufficient height');
+  layout.isMobile = true;
+  if (layout.rectStats().height < 230) throw new Error('mobile stats block has insufficient height');
+  if (document.querySelectorAll('#main-menu .mm-stat-row').length !== 5) throw new Error('menu statistics are missing the win-streak row');
+});
 
 const q = (s) => document.querySelector(s);
 console.log('DOM узлов:', document.querySelectorAll('*').length);

@@ -84,6 +84,15 @@ export class AI {
     return cost;
   }
 
+  /** Change expert posture from public game state, not hidden card identities. */
+  _expertTactic() {
+    if (this.deckLeft === 0) return 'endgame';
+    if (this.hand.length <= 2) return 'finish';
+    if (this.playerHandSize <= 2) return 'press';
+    if (this.hand.length >= this.playerHandSize + 3) return 'conserve';
+    return 'tactical';
+  }
+
   // Exact hidden-hand inference is possible only after the stock is empty.
   _isCardUnbeatable(card) {
     if (this.deckLeft > 0) return false;
@@ -160,14 +169,17 @@ export class AI {
     }
 
     if (this.level >= 3) {
+      const tactic = this._expertTactic();
+      const pressureWeight = tactic === 'finish' ? 6 : tactic === 'press' ? 5.5
+        : tactic === 'conserve' ? 2.5 : tactic === 'endgame' ? 6 : 4;
+      const resourceWeight = tactic === 'conserve' ? 0.65 : tactic === 'finish' ? 0.18 : 0.32;
       const scoreLead = (card) => {
         const sameRank = hand.filter(other => other !== card && other.data.rank === card.data.rank).length;
         const usefulAdds = Math.min(sameRank, Math.max(0, this.playerHandSize - 1), 5);
         const noBeater = 1 - this._opponentCanBeatProbability(card);
-        const endgameBonus = this.deckLeft === 0 && noBeater >= 0.999999 ? 3 : 0;
-        const pressureBonus = this.playerHandSize <= 2 ? noBeater * 1.5 : 0;
-        return noBeater * 4 + usefulAdds * 1.25 + endgameBonus + pressureBonus
-          - this._cardResourceCost(card) * 0.35;
+        const endgameBonus = tactic === 'endgame' && noBeater >= 0.999999 ? 4 : 0;
+        return noBeater * pressureWeight + usefulAdds * 1.4 + endgameBonus
+          - this._cardResourceCost(card) * resourceWeight;
       };
       const best = pool.slice().sort((a, b) => scoreLead(b) - scoreLead(a))[0];
       return { type: 'attack', card: best };
@@ -246,17 +258,24 @@ export class AI {
       pool = nonT.length ? nonT : cands;
     }
 
-    if (this.level >= 3 && this.deckLeft === 0 && pool.length) {
-      const best = pool.slice().sort((a, b) => {
-        const score = (card) => {
-          const sameRank = this.hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
-          const noBeater = 1 - this._opponentCanBeatProbability(card);
-          return noBeater * (this.playerHandSize <= 2 ? 5 : 2.5) + Math.min(sameRank, 3) * 0.5
-            - this._cardResourceCost(card) * 0.22;
-        };
-        return score(b) - score(a);
-      })[0];
-      return { type: 'attack', card: best, dump: false };
+    if (this.level >= 3 && pool.length) {
+      const tactic = this._expertTactic();
+      const pressureWeight = tactic === 'finish' ? 6 : tactic === 'press' ? 5.5
+        : tactic === 'conserve' ? 2.2 : tactic === 'endgame' ? 5 : 3.8;
+      const resourceWeight = tactic === 'conserve' ? 0.65 : 0.28;
+      const scored = pool.map(card => {
+        const noBeater = 1 - this._opponentCanBeatProbability(card);
+        const sameRank = this.hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
+        return { card, noBeater, score: noBeater * pressureWeight + Math.min(sameRank, 3) * 0.45
+          - this._cardResourceCost(card) * resourceWeight };
+      }).sort((a, b) => b.score - a.score);
+      const best = scored[0];
+      // When comfortably ahead in cards, don't swell the table with an
+      // attack the defender is very likely to beat; switch back to pressure
+      // when close to finishing or when the opponent is nearly out of cards.
+      if (tactic === 'conserve' && best.noBeater < 0.32) return { type: 'pass' };
+      if (tactic === 'tactical' && best.noBeater < 0.16) return { type: 'pass' };
+      return { type: 'attack', card: best.card, dump: false };
     }
 
     let chance = this.deckLeft === 0 ? 0.95 : (this.deckLeft < 6 ? 0.85 : 0.75);
