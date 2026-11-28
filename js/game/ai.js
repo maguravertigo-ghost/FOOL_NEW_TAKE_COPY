@@ -60,20 +60,31 @@ export class AI {
   }
 
   /** Probability the hidden opponent hand contains at least one legal beater. */
-  _opponentCanBeatProbability(card) {
+  _probabilityOpponentHas(predicate) {
     const unseen = this._getUnseenCards();
     const handSize = Math.min(this.playerHandSize, unseen.length);
     if (!handSize || !unseen.length) return 0;
-    const beaters = unseen.reduce((n, data) => n + (canBeat({ data }, card, this.trump) ? 1 : 0), 0);
-    if (!beaters) return 0;
-    if (unseen.length - beaters < handSize) return 1;
+    const matches = unseen.reduce((n, data) => n + (predicate(data) ? 1 : 0), 0);
+    if (!matches) return 0;
+    if (unseen.length - matches < handSize) return 1;
 
     // Hypergeometric probability, without peeking at the opponent's actual hand.
-    let noBeater = 1;
+    let noMatch = 1;
     for (let i = 0; i < handSize; i++) {
-      noBeater *= (unseen.length - beaters - i) / (unseen.length - i);
+      noMatch *= (unseen.length - matches - i) / (unseen.length - i);
     }
-    return 1 - noBeater;
+    return 1 - noMatch;
+  }
+
+  _opponentCanBeatProbability(card) {
+    return this._probabilityOpponentHas(data => canBeat({ data }, card, this.trump));
+  }
+
+  _opponentCanTranslateProbability(card) {
+    if (!this.s.translateMode || !card || this.hand.length < 3) return 0;
+    // After the opening attack CPU must retain at least two cards for a legal
+    // transfer. The opponent's matching rank is estimated only from unseen cards.
+    return this._probabilityOpponentHas(data => data.rank === card.data.rank);
   }
 
   _cardResourceCost(card, hand = this.hand) {
@@ -86,7 +97,7 @@ export class AI {
 
   /** Change expert posture from public game state, not hidden card identities. */
   _expertTactic() {
-    if (this.deckLeft === 0) return 'endgame';
+    if (this.deckLeft <= 6) return 'endgame';
     if (this.hand.length <= 2) return 'finish';
     if (this.playerHandSize <= 2) return 'press';
     if (this.hand.length >= this.playerHandSize + 3) return 'conserve';
@@ -178,8 +189,10 @@ export class AI {
         const usefulAdds = Math.min(sameRank, Math.max(0, this.playerHandSize - 1), 5);
         const noBeater = 1 - this._opponentCanBeatProbability(card);
         const endgameBonus = tactic === 'endgame' && noBeater >= 0.999999 ? 4 : 0;
+        const transferRisk = this._opponentCanTranslateProbability(card);
+        const transferPenalty = this.s.translateMode ? transferRisk * (tactic === 'endgame' ? 4 : 3) : 0;
         return noBeater * pressureWeight + usefulAdds * 1.4 + endgameBonus
-          - this._cardResourceCost(card) * resourceWeight;
+          - this._cardResourceCost(card) * resourceWeight - transferPenalty;
       };
       const best = pool.slice().sort((a, b) => scoreLead(b) - scoreLead(a))[0];
       return { type: 'attack', card: best };
@@ -319,13 +332,13 @@ export class AI {
     }
 
     const nonT = cands.filter(c => !this.isTrump(c));
-    if (this.deckLeft > 0) {
+    if (this.deckLeft > 6 || (this.deckLeft > 0 && this.level < 3)) {
       if (!nonT.length) return { type: 'done' };
       nonT.sort((a, b) => this.attackValue(a) - this.attackValue(b));
       return { type: 'attack', card: nonT[0], dump: true };
     }
 
-    if (this.level >= 3 && this.deckLeft === 0) {
+    if (this.level >= 3 && this.deckLeft <= 6) {
       const best = cands.slice().sort((a, b) => {
         const score = (card) => {
           const noBeater = 1 - this._opponentCanBeatProbability(card);

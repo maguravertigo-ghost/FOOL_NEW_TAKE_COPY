@@ -436,6 +436,43 @@ await step('expert AI counts public discards and does not peek at hidden cards',
   if (tacticalExpert._expertTactic() !== 'press' || tacticalExpert._decideAdd().type !== 'attack') {
     throw new Error('expert did not press when opponent was nearly out of cards');
   }
+
+  addSession._totalRemaining = () => 6;
+  if (tacticalExpert._expertTactic() !== 'endgame') throw new Error('expert did not enter endgame planning with a small stock');
+
+  const transferSession = {
+    deckSize: 36, trump: 'hearts', trumpCard: null, discardPile: [], translateMode: true,
+    round: { phase: 'A_START', table: [] },
+    app: { accordionCpu: { cards: [makeCard('6', 'clubs'), makeCard('7', 'diamonds'), makeCard('8', 'spades')] },
+      accordionPlayer: { cards: Array.from({ length: 5 }, () => makeCard('9', 'diamonds')) } },
+    _totalRemaining: () => 12, _defenderHandSize: () => 5,
+  };
+  const kingCards = all36.filter(card => card.rank === 'K');
+  const transferKnownDiscard = all36
+    .filter(card => card.rank !== 'K' && !(card.rank === '6' && card.suit === 'clubs') && !(card.rank === '7' && card.suit === 'clubs'))
+    .map(card => makeCard(card.rank, card.suit));
+  const rankedTransferSession = {
+    deckSize: 36, trump: 'hearts', trumpCard: null, discardPile: transferKnownDiscard, translateMode: true,
+    round: { phase: 'A_START', table: [] },
+    app: { accordionCpu: { cards: [makeCard('K', 'clubs'), makeCard('6', 'clubs'), makeCard('7', 'clubs')] },
+      accordionPlayer: { cards: [makeCard('K', 'diamonds'), makeCard('K', 'hearts')] } },
+    _totalRemaining: () => 0, _defenderHandSize: () => 2,
+  };
+  const translateCount = new AI(rankedTransferSession, { level: 3 });
+  if (kingCards.length !== 4 || translateCount._opponentCanTranslateProbability(rankedTransferSession.app.accordionCpu.cards[0]) !== 1) {
+    throw new Error('expert did not estimate a player translation from unseen public card counts');
+  }
+  rankedTransferSession.app.accordionCpu.cards.pop();
+  if (translateCount._opponentCanTranslateProbability(rankedTransferSession.app.accordionCpu.cards[0]) !== 0) {
+    throw new Error('expert considered a transfer legal without enough cards to defend it');
+  }
+
+  const transferAware = new AI(transferSession, { level: 3 });
+  transferAware._opponentCanBeatProbability = () => 0.5;
+  transferAware._opponentCanTranslateProbability = card => card.data.rank === '6' ? 0.9 : 0;
+  if (transferAware.decide().card.data.rank === '6') {
+    throw new Error('expert ignored the public-information risk of a player transfer');
+  }
 });
 
 await step('hand card hit-test takes priority over overlapping action button', async () => {
