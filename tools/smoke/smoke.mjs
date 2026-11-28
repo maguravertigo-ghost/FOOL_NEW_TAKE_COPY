@@ -473,6 +473,40 @@ await step('expert AI counts public discards and does not peek at hidden cards',
   if (transferAware.decide().card.data.rank === '6') {
     throw new Error('expert ignored the public-information risk of a player transfer');
   }
+
+  const resourceSession = {
+    deckSize: 36, trump: 'hearts', trumpCard: null, discardPile: [], translateMode: false,
+    round: { phase: 'A_START', table: [] },
+    app: { accordionCpu: { cards: [makeCard('A', 'clubs'), makeCard('7', 'clubs'), makeCard('8', 'diamonds')] },
+      accordionPlayer: { cards: Array.from({ length: 6 }, () => makeCard('9', 'spades')) } },
+    _totalRemaining: () => 20, _defenderHandSize: () => 6,
+  };
+  const resourceExpert = new AI(resourceSession, { level: 3 });
+  resourceExpert._opponentCanBeatProbability = () => 0.5;
+  if (resourceExpert.decide().card.data.rank === 'A') throw new Error('expert led with an ace despite cheaper non-ace cards');
+  resourceSession.round.phase = 'A_DUMP';
+  resourceSession.round.table = [{ atk: makeCard('A', 'spades'), def: null }, { atk: makeCard('7', 'diamonds'), def: null }];
+  resourceSession.app.accordionCpu.cards = [makeCard('A', 'clubs'), makeCard('A', 'diamonds'), makeCard('7', 'clubs')];
+  if (resourceExpert.decide().card.data.rank !== '7') throw new Error('expert dumped an ace instead of a low matching card');
+  resourceSession.app.accordionCpu.cards = [makeCard('A', 'clubs'), makeCard('A', 'diamonds')];
+  if (resourceExpert.decide().type !== 'done') throw new Error('expert dumped a second ace when it could preserve its hand');
+});
+
+await step('dev move logger captures player and AI context without affecting game logic', async () => {
+  const { GameSession } = await import('file://' + path.join(ROOT, 'js/game/game_session.js'));
+  const session = Object.create(GameSession.prototype);
+  const card = { data: { rank: 'A', suit: 'clubs' } };
+  session.devMoveLog = { startedAt: new Date().toISOString(), moves: [] };
+  session.round = { n: 3, phase: 'A_START', attack: 'player', table: [{ atk: card, def: null }] };
+  session.trump = 'hearts';
+  session.app = { accordionPlayer: { cards: [card] }, accordionCpu: { cards: [] } };
+  session._totalRemaining = () => 8;
+  session._recordDevMove('attack', 'player', card, { dumpMode: false });
+  const entry = session.devMoveLog.moves[0];
+  if (entry.card !== 'Aclubs' || entry.actor !== 'player' || entry.round !== 3 || entry.stock !== 8
+      || entry.hands.player[0] !== 'Aclubs' || entry.table[0].atk !== 'Aclubs') {
+    throw new Error('dev move log omitted core move/context fields');
+  }
 });
 
 await step('hand card hit-test takes priority over overlapping action button', async () => {

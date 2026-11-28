@@ -446,14 +446,15 @@ _createDevTools() {
   wrap.id = 'dev-tools';
   wrap.style.cssText = `
     position: fixed;
-    right: 12px;
-    top: 12px;
+    right: 8px;
+    top: 8px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
     align-items: stretch;
-    max-height: calc(100vh - 24px);
+    width: min(220px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
     overflow-y: auto;
   `;
 
@@ -461,15 +462,16 @@ _createDevTools() {
     const b = document.createElement('button');
     b.textContent = label;
     b.style.cssText = `
-      padding: 8px 14px;
+      padding: 5px 8px;
       background: ${bg};
       color: #fff;
       border: 1px solid ${border};
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
-      font: 700 13px system-ui, sans-serif;
-      letter-spacing: 1px;
+      font: 700 11px/1.1 system-ui, sans-serif;
+      letter-spacing: 0.4px;
       opacity: 0.92;
+      max-width: 100%;
     `;
     b.addEventListener('click', onClick);
     return b;
@@ -497,6 +499,22 @@ _createDevTools() {
     }
   });
   wrap.appendChild(profileBtn);
+
+  wrap.appendChild(mkBtn('СКАЧАТЬ ЛОГ ХОДОВ', '#283593', '#7986cb', () => {
+    const matches = window.__devMoveHistory || [];
+    if (!matches.length) {
+      showMessage('Лог появится после начала матча', { title: 'DEV: ходы' });
+      return;
+    }
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), matches }, null, 2)],
+      { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `durak-move-log-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }));
 
   // +2000 очков стиля
   wrap.appendChild(mkBtn('+2000', '#c62828', '#e57373', () => {

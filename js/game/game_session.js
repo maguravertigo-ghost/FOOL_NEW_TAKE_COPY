@@ -5,7 +5,7 @@ import { Card } from './card.js';
 import { clearCache, warmUpDeck } from './card_cache.js';
 import { Deck } from './deck.js';
 import { moveLinear, moveFlip, moveArkFlip } from '../core/interpolator.js';
-import { REAL, SUIT_VALUE, RANK_VALUE } from './constants.js';
+import { REAL, SUIT_VALUE, RANK_VALUE, DEV_MODE } from './constants.js';
 import { SceneLayout } from './scene_layout.js';
 import { canBeat, canTranslate, canAddToTable, tableRanks } from './rules.js';
 import { Marker } from '../core/marker.js';
@@ -80,6 +80,21 @@ export class GameSession {
 	const deckSize = GameSettings.deckSize || 36;
 	this.deckSize = Number(deckSize);
 	this.deck = new Deck(String(deckSize)).shuffle();
+
+    this.devMoveLog = null;
+    if (DEV_MODE) {
+      this.devMoveLog = {
+        id: `match-${Date.now()}`,
+        startedAt: new Date().toISOString(),
+        mode: this.mode,
+        deckSize: this.deckSize,
+        aiLevel: GameSettings.aiLevel || 2,
+        moves: [],
+      };
+      window.__devMoveHistory ||= [];
+      window.__devMoveHistory.push(this.devMoveLog);
+      if (window.__devMoveHistory.length > 10) window.__devMoveHistory.shift();
+    }
 
     // статистика для погон/квестов
     this._playerLastPlays = [];
@@ -1016,6 +1031,10 @@ async _animateTake(cards, defender) {
     if (this._finishingGame) return;
     this._finishingGame = true;
     this._gameOverPending = true;
+    if (this.devMoveLog) {
+      this.devMoveLog.result = winner;
+      this.devMoveLog.endedAt = new Date().toISOString();
+    }
 
     if (this._cpuTimer) {
       clearTimeout(this._cpuTimer);
@@ -1714,6 +1733,7 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
       return;
     }
 
+    this._recordDevMove(dumpMode ? 'dump' : 'attack', byWho, card, { dumpMode });
     const slotM = this.markers.get(`table_atk_${idx}`);
     const acc = byWho === 'player' ? this.app.accordionPlayer : this.app.accordionCpu;
     this._moveCardToBoardLayer(card);
@@ -1771,6 +1791,7 @@ el.querySelector('[data-action="ad"]').addEventListener('click', async () => {
 
   async _playDefenseCard(card, pairIdx, byWho) {
     const r = this.round;
+    this._recordDevMove('defense', byWho, card, { pairIdx, attackCard: this.round.table[pairIdx]?.atk?.data?.rank + this.round.table[pairIdx]?.atk?.data?.suit });
     const slotM = this.markers.get(`table_def_${pairIdx}`);
     const acc = byWho === 'player' ? this.app.accordionPlayer : this.app.accordionCpu;
     this._moveCardToBoardLayer(card);
@@ -1855,6 +1876,7 @@ if (!stillUnbeaten && r.table.length >= 6) {
     }
     const r = this.round;
     const idx = r.table.length;
+    this._recordDevMove('translate', byWho, card);
     const slotM = this.markers.get(`table_atk_${idx}`);
     const acc = byWho === 'player' ? this.app.accordionPlayer : this.app.accordionCpu;
     this._moveCardToBoardLayer(card);
@@ -1894,6 +1916,7 @@ card.setZIndex(1500);
 
 	_defenderTake(side) {
 	  const r = this.round;
+      this._recordDevMove('take', side);
 	  console.log(`[${side}] take`);
 	  if (side === 'cpu') this._jokerFrame('sad');
 
@@ -1920,8 +1943,8 @@ card.setZIndex(1500);
 	  this._updateHandOverlays();
 	  if (r.move === 'cpu') this._scheduleCpu();
 	}
-  _attackerPass() { this._endRound('discard'); }
-  _attackerDone() { this._endRound('take'); }
+  _attackerPass() { this._recordDevMove('pass', this.round.attack); this._endRound('discard'); }
+  _attackerDone() { this._recordDevMove('done', this.round.attack); this._endRound('take'); }
 
   onPause() {
     this._paused = true;
@@ -1952,6 +1975,28 @@ onResume() {
     }, 480);
   }
 
+  _recordDevMove(action, actor, card = null, details = {}) {
+    if (!this.devMoveLog) return;
+    const code = value => value ? `${value.data.rank}${value.data.suit}` : null;
+    const r = this.round;
+    this.devMoveLog.moves.push({
+      t: Date.now() - Date.parse(this.devMoveLog.startedAt),
+      round: r?.n ?? null,
+      phase: r?.phase ?? null,
+      actor,
+      action,
+      card: code(card),
+      trump: this.trump,
+      stock: this._totalRemaining(),
+      hands: {
+        player: this.app.accordionPlayer.cards.map(code),
+        cpu: this.app.accordionCpu.cards.map(code),
+      },
+      table: (r?.table || []).map(pair => ({ atk: code(pair.atk), def: code(pair.def) })),
+      ...details,
+    });
+  }
+
   _cpuAct() {
     if (this._paused) return;
 	if (this._gameOverPending) return;
@@ -1960,6 +2005,13 @@ onResume() {
 
     const action = this.ai.decide();
     if (!action) return;
+    this._recordDevMove('decision', 'cpu', action.card || null, {
+      decision: action.type,
+      tactic: this.ai.level >= 3 ? this.ai._expertTactic() : null,
+      estimatedPlayerCanBeat: action.card ? this.ai._opponentCanBeatProbability(action.card) : null,
+      estimatedPlayerCanTranslate: action.card ? this.ai._opponentCanTranslateProbability(action.card) : null,
+      resourceCost: action.card ? this.ai._cardResourceCost(action.card) : null,
+    });
 
 switch (action.type) {
   case 'attack':

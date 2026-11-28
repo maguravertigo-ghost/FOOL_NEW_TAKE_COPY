@@ -90,6 +90,9 @@ export class AI {
   _cardResourceCost(card, hand = this.hand) {
     const rank = this.rank(card);
     let cost = this.isTrump(card) ? 3.1 + rank * 0.11 : 0.45 + rank * 0.075;
+    // Face cards, especially aces, are winning resources: don't throw them
+    // away for a routine attack/defense when a smaller card is available.
+    if (rank >= 11) cost += 0.55 * (rank - 10) + (rank === 14 ? 1.1 : 0);
     const matching = hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
     if (matching) cost += 1.1 + matching * 0.45; // preserve attack pairs/triples when practical
     return cost;
@@ -180,6 +183,12 @@ export class AI {
     }
 
     if (this.level >= 3) {
+      const nonAceNonTrump = nonT.filter(card => this.rank(card) < 14);
+      const nonAceInHand = hand.filter(card => this.rank(card) < 14);
+      // Keep aces until all cheaper options are gone. A non-trump ace should
+      // not be the opening lead when a lower card (even a low trump) is held.
+      const leadPool = nonAceNonTrump.length ? nonAceNonTrump
+        : nonAceInHand.length ? nonAceInHand : pool;
       const tactic = this._expertTactic();
       const pressureWeight = tactic === 'finish' ? 6 : tactic === 'press' ? 5.5
         : tactic === 'conserve' ? 2.5 : tactic === 'endgame' ? 6 : 4;
@@ -194,7 +203,7 @@ export class AI {
         return noBeater * pressureWeight + usefulAdds * 1.4 + endgameBonus
           - this._cardResourceCost(card) * resourceWeight - transferPenalty;
       };
-      const best = pool.slice().sort((a, b) => scoreLead(b) - scoreLead(a))[0];
+      const best = leadPool.slice().sort((a, b) => scoreLead(b) - scoreLead(a))[0];
       return { type: 'attack', card: best };
     }
 
@@ -332,23 +341,25 @@ export class AI {
     }
 
     const nonT = cands.filter(c => !this.isTrump(c));
+    if (this.level >= 3) {
+      const late = this.deckLeft <= 6;
+      let pool = nonT.filter(card => this.rank(card) <= 10);
+      if (!pool.length && late && this.playerHandSize <= 2) {
+        pool = nonT.filter(card => this.rank(card) < 14);
+      }
+      if (!pool.length) return { type: 'done' };
+      pool.sort((a, b) => {
+        const score = card => (1 - this._opponentCanBeatProbability(card)) * (this.playerHandSize <= 2 ? 4 : 1.5)
+          - this._cardResourceCost(card) * (late ? 0.45 : 0.65);
+        return score(b) - score(a);
+      });
+      return { type: 'attack', card: pool[0], dump: true };
+    }
+
     if (this.deckLeft > 6 || (this.deckLeft > 0 && this.level < 3)) {
       if (!nonT.length) return { type: 'done' };
       nonT.sort((a, b) => this.attackValue(a) - this.attackValue(b));
       return { type: 'attack', card: nonT[0], dump: true };
-    }
-
-    if (this.level >= 3 && this.deckLeft <= 6) {
-      const best = cands.slice().sort((a, b) => {
-        const score = (card) => {
-          const noBeater = 1 - this._opponentCanBeatProbability(card);
-          const sameRank = this.hand.filter(c => c !== card && c.data.rank === card.data.rank).length;
-          return noBeater * (this.playerHandSize <= 2 ? 5 : 2.5) + Math.min(sameRank, 3) * 0.4
-            - this._cardResourceCost(card) * 0.2;
-        };
-        return score(b) - score(a);
-      })[0];
-      return { type: 'attack', card: best, dump: true };
     }
 
     const lowTrumps = cands.filter(c => this.isTrump(c) && this.rank(c) <= 10);
@@ -459,7 +470,7 @@ export class AI {
       // cost of taking. It no longer takes merely because one or two trumps
       // are involved, and protects a near-empty hand in the endgame.
       const defenseCost = plan.reduce((sum, item) => sum + this._cardResourceCost(item.def), 0);
-      let takeCost = 4.8 + plan.length * 1.1;
+      let takeCost = 7.0 + plan.length * 1.5;
       if (this.playerHandSize <= 2) takeCost += 2.4;
       if (this.deckLeft === 0 && this.hand.length <= this.playerHandSize + 1) takeCost += 2.0;
       if (this.hand.length <= 2) takeCost += 1.5;
